@@ -1,14 +1,14 @@
 [tool.poetry]
-name = "database-tools"
+name = "DeepBP"
 version = "0.1.0"
-description = "For compiling MIMIC-III waveform data into a ML ready database."
+description = "Model garden for blood pressure estimation."
 authors = ["Cameron Johnson"]
 license = "None"
 readme = "README.md"
-packages = [{include = "database_tools"}]
+packages = [{include = "src"}]
 
 [tool.poetry.dependencies]
-python = ">=3.10,<3.12"
+python = ">=3.10,<3.11"
 numpy = "^1.23.2"
 pandas = "^1.4.4"
 jupyter = "^1.0.0"
@@ -18,6 +18,8 @@ plotly = "^5.10.0"
 tqdm = "^4.64.1"
 openpyxl = "^3.0.10"
 scipy = "^1.9.1"
+keras = "^2.10.0"
+tensorflow = "^2.10.0"
 
 
 [build-system]
