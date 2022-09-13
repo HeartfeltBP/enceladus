@@ -7,7 +7,7 @@ from keras.utils.vis_utils import plot_model
 
 def create_model(input_shape=(625, 1), lr=0.0001, decay=0.0001, plot=False):
     input = Input(shape=input_shape)
-    output = activebp(input, lr=lr)
+    output = deepbp(input, lr=lr)
     model = Model(inputs=input, outputs=output)
 
     optimizer = tf.keras.optimizers.RMSprop(learning_rate=lr, decay=decay)
@@ -19,7 +19,7 @@ def create_model(input_shape=(625, 1), lr=0.0001, decay=0.0001, plot=False):
         plot_model(model=model, to_file='model.png', show_shapes=True)
     return model
 
-def activebp(x, lr):
+def deepbp(x, lr):
     x1 = resnet(x)
     x1 = Bidirectional(LSTM(64,
                             activation='tanh',
