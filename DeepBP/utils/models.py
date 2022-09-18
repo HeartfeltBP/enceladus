@@ -3,66 +3,67 @@ from keras.models import Model
 from keras.layers import Input, Conv1D, BatchNormalization, Activation, MaxPooling1D, \
                          AveragePooling1D, Add, Bidirectional, LSTM, Dense, Permute, Reshape, Dropout
 from keras.regularizers import l2
-from keras.utils.vis_utils import plot_model
 
-def create_model(input_shape=(625, 1), lr=0.0001, decay=0.0001, plot=False):
-    input = Input(shape=input_shape)
-    output = deepbp(input, lr=lr)
-    model = Model(inputs=input, outputs=output)
-
-    optimizer = tf.keras.optimizers.RMSprop(learning_rate=lr, decay=decay)
-    model.compile(optimizer=optimizer,
-                  loss='mse',
-                  metrics=['mae'])
-
-    if plot:
-        plot_model(model=model, to_file='model.png', show_shapes=True)
+def create_model(config):
+    input = Input(shape=config['input_shape'])
+    output = deepbp(input, config)
+    model = Model(inputs=[input], outputs=[output], name='DeepBP')
     return model
 
-def deepbp(x, lr):
+def deepbp(x, config):
     x1 = resnet(x)
-    x1 = Bidirectional(LSTM(64,
+
+    # CNN LSTM Layer
+    x1 = Bidirectional(LSTM(config['cnn_st_units'],
                             activation='tanh',
                             recurrent_activation='sigmoid'))(x1)
     x1 = BatchNormalization()(x1)
 
+    # Spectro-temporal Layer
     x2 = spectro_temporal_block(x)
 
+    # Output layer
     output = Add()([x1, x2])
-    output = Dense(32, activation='relu', kernel_regularizer=l2(lr))(output)
-    output = Dropout(0.25)(output)
-    output = Dense(32, activation='relu', kernel_regularizer=l2(lr))(output)
-    output = Dropout(0.25)(output)
+    output = Dense(config['dense_1'], activation='relu', kernel_regularizer=l2(config['lr']))(output)
+    output = Dropout(config['dropout_1'])(output)
+    output = Dense(config['dense_2'], activation='relu', kernel_regularizer=l2(config['lr']))(output)
+    output = Dropout(config['dropout_1'])(output)
     output = Dense(2, activation='relu')(output)
     return output
 
-def resnet(x):
-    x = Conv1D(kernel_size=(7), filters=64, strides=(2), padding='same')(x)
+def resnet(x, config):
+    # Layer 1
+    x = Conv1D(kernel_size=config['kernel_1'], filters=config['filters_1'], strides=config['strides_1'], padding='same')(x)
     x = BatchNormalization()(x)
     x = Activation('relu')(x)
-    x = MaxPooling1D((3), strides=(2))(x)
+    x = MaxPooling1D(config['max_pooling_1'], strides=config['strides_1'])(x)
 
-    x = convolutional_block(x, kernel_sizes=[(3), (3)], filters=[64, 64])
-    x = identity_block(x, kernel_sizes=[(3), (3)], filters=[64, 64])
-    x = identity_block(x, kernel_sizes=[(3), (3)], filters=[64, 64])
+    # Layer 2
+    x = convolutional_block(x, kernel_sizes=config['kernel_2'], filters=config['filters_2'])
+    x = identity_block(x, kernel_sizes=config['kernel_2'], filters=config['filters_2'])
+    x = identity_block(x, kernel_sizes=config['kernel_2'], filters=config['filters_2'])
 
-    x = convolutional_block(x, kernel_sizes=[(3), (3)], filters=[128, 128])
-    x = identity_block(x, kernel_sizes=[(3), (3)], filters=[128, 128])
-    x = identity_block(x, kernel_sizes=[(3), (3)], filters=[128, 128])
-    x = identity_block(x, kernel_sizes=[(3), (3)], filters=[128, 128])
+    # Layer 3
+    x = convolutional_block(x, kernel_sizes=config['kernel_3'], filters=config['filters_3'])
+    x = identity_block(x, kernel_sizes=config['kernel_3'], filters=config['filters_3'])
+    x = identity_block(x, kernel_sizes=config['kernel_3'], filters=config['filters_3'])
+    x = identity_block(x, kernel_sizes=config['kernel_3'], filters=config['filters_3'])
 
-    x = convolutional_block(x, kernel_sizes=[(3), (3)], filters=[256, 256])
-    x = identity_block(x, kernel_sizes=[(3), (3)], filters=[256, 256])
-    x = identity_block(x, kernel_sizes=[(3), (3)], filters=[256, 256])
-    x = identity_block(x, kernel_sizes=[(3), (3)], filters=[256, 256])
-    x = identity_block(x, kernel_sizes=[(3), (3)], filters=[256, 256])
-    x = identity_block(x, kernel_sizes=[(3), (3)], filters=[256, 256])
+    # Layer 4
+    x = convolutional_block(x, kernel_sizes=config['kernel_4'], filters=config['filters_4'])
+    x = identity_block(x, kernel_sizes=config['kernel_4'], filters=config['filters_4'])
+    x = identity_block(x, kernel_sizes=config['kernel_4'], filters=config['filters_4'])
+    x = identity_block(x, kernel_sizes=config['kernel_4'], filters=config['filters_4'])
+    x = identity_block(x, kernel_sizes=config['kernel_4'], filters=config['filters_4'])
+    x = identity_block(x, kernel_sizes=config['kernel_4'], filters=config['filters_4'])
 
-    x = convolutional_block(x, kernel_sizes=[(3), (3)], filters=[512, 512])
-    x = identity_block(x, kernel_sizes=[(3), (3)], filters=[512, 512])
-    x = identity_block(x, kernel_sizes=[(3), (3)], filters=[512, 512])
+    # Layer 5
+    x = convolutional_block(x, kernel_sizes=config['kernel_5'], filters=config['filters_5'])
+    x = identity_block(x, kernel_sizes=config['kernel_5'], filters=config['filters_5'])
+    x = identity_block(x, kkernel_sizes=config['kernel_5'], filters=config['filters_5'])
 
-    x = AveragePooling1D(pool_size=(2), padding='same')(x)
+    # Pooling
+    x = AveragePooling1D(pool_size=config['pooling'], padding='same')(x)
     return x
 
 def convolutional_block(x, kernel_sizes, filters):
@@ -108,17 +109,14 @@ def identity_block(x, kernel_sizes, filters):
     x = Activation('relu')(x)
     return x
 
-def spectro_temporal_block(x):
-    frame_length = 125
-    frame_step = 8
-
+def spectro_temporal_block(x, config):
     x = Permute((2, 1))(x)
     x = tf.signal.stft(x,
-                       frame_length=frame_length,
-                       frame_step=frame_step)
+                       frame_length=config['frame_length'],
+                       frame_step=config['frame_step'])
     x = tf.abs(x)
     x = Reshape((63, 65))(x)
-    x = Bidirectional(LSTM(64,
+    x = Bidirectional(LSTM(config['st_units'],
                            activation='tanh',
                            recurrent_activation='sigmoid'))(x)
     x = BatchNormalization()(x)
