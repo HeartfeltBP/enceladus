@@ -28,7 +28,7 @@ def deepbp(x, config):
     output = Dropout(config['dropout_1'])(output)
     output = Dense(config['dense_2'], activation='relu', kernel_regularizer=l2(config['lr']))(output)
     output = Dropout(config['dropout_1'])(output)
-    output = Dense(1, activation='relu')(output)
+    output = Dense(2, activation='relu')(output)
     return output
 
 def resnet(x, config):
