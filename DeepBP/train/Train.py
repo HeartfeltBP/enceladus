@@ -24,7 +24,7 @@ class Train():
         model = self._train(model, callbacks, dataset, logger1)
         self._save_model(model)
 
-        test_loss, test_acc = self._test(model)
+        test_loss, test_acc = self._test(model, dataset['test'], logger1)
 
         if self._args['use_wandb_tracking']:
             wandb.log({"Test loss":test_loss, "Test accuracy": test_acc})
@@ -138,7 +138,7 @@ class Train():
         train = train.shuffle(10, seed=seed, reshuffle_each_iteration=True).batch(self._args['batch_size'])
         val = val.shuffle(10, seed=seed, reshuffle_each_iteration=True).batch(self._args['batch_size'])
         test = test.shuffle(10, seed=seed, reshuffle_each_iteration=True).batch(self._args['batch_size'])
-        
+
         # Make the data infinite.
         # train = train.repeat()
         # val = val.repeat()
@@ -156,7 +156,7 @@ class Train():
             steps_per_epoch=self._args['steps_per_epoch'],
             epochs=self._args['epochs'],
             callbacks=callbacks,
-            use_multiprocessing=True,
+            use_multiprocessing=self._args['use_multiprocessing'],
         )
 
         logger.info('Training finished.')

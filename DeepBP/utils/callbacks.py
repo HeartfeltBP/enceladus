@@ -18,13 +18,13 @@ def get_callbacks(validation_dataset, steps_valid, logger1, args):
     tb_callback = keras.callbacks.TensorBoard(log_dir=tensorboard_dir, histogram_freq=1, write_graph=True, write_images=True)
 
     # Early stopping
-    es_callback = keras.callbacks.EarlyStopping(monitor='val_mse', patience=args['es_patience'], verbose=1, restore_best_weights=True)
+    es_callback = keras.callbacks.EarlyStopping(monitor='val_loss', patience=args['es_patience'], verbose=1, restore_best_weights=True)
     callbacks = [tb_callback, es_callback]
 
     if args['use_wandb_tracking']:
         wandb_callback = WandbCallback(
-            labels=['sbp', 'dbp'],
-            log_weights=True, monitor='val_mse',
+            labels=['bp'],
+            log_weights=True, monitor='val_loss',
             generator=validation_dataset,
             validation_steps=steps_valid,
             log_evaluation=True
