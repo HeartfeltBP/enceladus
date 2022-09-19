@@ -129,5 +129,5 @@ dmypy.json
 .pyre/
 
 */output/
-output/*
+output/
 /home/cam/Documents/DeepBP/output/
