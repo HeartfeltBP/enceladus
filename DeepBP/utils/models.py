@@ -118,6 +118,7 @@ def spectro_temporal_block(x, config):
     x = Reshape((63, 65))(x)
     x = Bidirectional(LSTM(config['st_units'],
                            activation='tanh',
-                           recurrent_activation='sigmoid'))(x)
+                           recurrent_activation='sigmoid',
+                           name='spectro_temperal_layer'))(x)
     x = BatchNormalization()(x)
     return x
