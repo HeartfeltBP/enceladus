@@ -11,7 +11,7 @@ def create_model(config):
     return model
 
 def deepbp(x, config):
-    x1 = resnet(x)
+    x1 = resnet(x, config)
 
     # CNN LSTM Layer
     x1 = Bidirectional(LSTM(config['cnn_st_units'],
@@ -20,7 +20,7 @@ def deepbp(x, config):
     x1 = BatchNormalization()(x1)
 
     # Spectro-temporal Layer
-    x2 = spectro_temporal_block(x)
+    x2 = spectro_temporal_block(x, config)
 
     # Output layer
     output = Add()([x1, x2])
@@ -28,7 +28,7 @@ def deepbp(x, config):
     output = Dropout(config['dropout_1'])(output)
     output = Dense(config['dense_2'], activation='relu', kernel_regularizer=l2(config['lr']))(output)
     output = Dropout(config['dropout_1'])(output)
-    output = Dense(2, activation='relu')(output)
+    output = Dense(1, activation='relu')(output)
     return output
 
 def resnet(x, config):
@@ -60,7 +60,7 @@ def resnet(x, config):
     # Layer 5
     x = convolutional_block(x, kernel_sizes=config['kernel_5'], filters=config['filters_5'])
     x = identity_block(x, kernel_sizes=config['kernel_5'], filters=config['filters_5'])
-    x = identity_block(x, kkernel_sizes=config['kernel_5'], filters=config['filters_5'])
+    x = identity_block(x, kernel_sizes=config['kernel_5'], filters=config['filters_5'])
 
     # Pooling
     x = AveragePooling1D(pool_size=config['pooling'], padding='same')(x)

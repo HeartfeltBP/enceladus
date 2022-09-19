@@ -48,10 +48,10 @@ def get_strategy(logger1, xla=0, fp16=0, no_cuda=0):
     gpu_devices = tf.config.experimental.list_physical_devices('GPU')
     for device in gpu_devices:
         tf.config.experimental.set_memory_growth(device, True)
-    try:
-        os.system('for a in /sys/bus/pci/devices/*; do echo 0 | sudo tee -a $a/numa_node; done')
-    except:
-        pass
+    # try:
+    #     os.system('for a in /sys/bus/pci/devices/*; do echo 0 | sudo tee -a $a/numa_node; done')
+    # except:
+    #     pass
 
     if xla:
         tf.config.optimizer.set_jit(True)

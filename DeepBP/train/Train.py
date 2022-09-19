@@ -4,6 +4,7 @@ import wandb
 import tensorflow as tf
 from DeepBP.utils import create_model, callbacks
 from DeepBP.utils import set_all_seeds, get_logger, get_strategy, get_callbacks
+from database_tools.utils import ReadTFRecords
 
 
 class Train():
@@ -12,36 +13,36 @@ class Train():
         return
 
     def run(self):
-        logger1 = get_logger('train.log', 'w')
+        logger1 = get_logger('output/train.log', 'w')
         logger1.info('Starting training pipeline')
 
         model, callbacks = self._setup(logger=logger1)
-        model.summary(positions=[.33, .60, .67, 1.])
+        # model.summary(positions=[.33, .60, .67, 1.])
 
-        # model = self._train(model, callbacks)
-        # self._save_model(model)
+        dataset = self._load_dataset()
 
-        # test_loss, test_acc = self._test(model)
+        model = self._train(model, callbacks, dataset, logger1)
+        self._save_model(model)
 
-        # if self._args['use_wandb_tracking']:
-        #     wandb.log({"Test loss":test_loss, "Test accuracy": test_acc})
-        #     wandb.finish()
+        test_loss, test_acc = self._test(model)
 
-        # # Clean up, free memory (not reliable though)
-        # tf.keras.backend.clear_session() 
-        # del model
-        # gc.collect()
+        if self._args['use_wandb_tracking']:
+            wandb.log({"Test loss":test_loss, "Test accuracy": test_acc})
+            wandb.finish()
 
-        # logger1.info("\nScript finished.")
+        # Clean up, free memory (not reliable though)
+        tf.keras.backend.clear_session() 
+        del model
+        gc.collect()
+
+        logger1.info('\nDone.')
         return
 
     def _get_hyperparameters(self):
         config = {
-            'epochs'        : 10,
-            'batch_size'    : 256,
             'input_shape'   : (625, 1),
             'lr'            : 0.0001,
-            'decay'         : None,
+            'decay'         : 0.0001,
             'kernel_1'      : ( 7),
             'filters_1'     : 64,
             'strides_1'     : (2),
@@ -91,7 +92,7 @@ class Train():
         set_all_seeds(self._args['seed'])
 
         # Get model config
-        model_config = self._get_hyperparameters(self._args)
+        model_config = self._get_hyperparameters()
 
         #initialize W&B logging if requested
         if self._args['use_wandb_tracking']:
@@ -120,11 +121,54 @@ class Train():
 
         return model, callbacks
 
-    def _train(self):
-        return
+    def _load_dataset(self, seed=1337):
+        AUTOTUNE = tf.data.experimental.AUTOTUNE
 
-    def _test(self):
-        return
+        options = tf.data.Options()
+        options.experimental_deterministic = False
+
+        dataset = ReadTFRecords(data_dir=self._args['tfrecords_dir'],
+                                method=self._args['data_method'],
+                                n_cores=10,
+                                AUTOTUNE=AUTOTUNE).run()
+        train = dataset['train'].prefetch(AUTOTUNE)
+        val = dataset['val'].prefetch(AUTOTUNE)
+        test = dataset['test'].prefetch(AUTOTUNE)
+
+        train = train.shuffle(10, seed=seed, reshuffle_each_iteration=True).batch(self._args['batch_size'])
+        val = val.shuffle(10, seed=seed, reshuffle_each_iteration=True).batch(self._args['batch_size'])
+        test = test.shuffle(10, seed=seed, reshuffle_each_iteration=True).batch(self._args['batch_size'])
+        
+        # Make the data infinite.
+        # train = train.repeat()
+        # val = val.repeat()
+        # test = test.repeat()
+
+        return dict(train=train, val=val, test=test)
+
+    def _train(self, model, callbacks, data, logger):
+        logger.info('Starting training.')
+
+        model.fit(
+            data['train'],
+            validation_data=data['val'],
+            validation_steps=self._args['val_steps'],
+            steps_per_epoch=self._args['steps_per_epoch'],
+            epochs=self._args['epochs'],
+            callbacks=callbacks,
+            use_multiprocessing=True,
+        )
+
+        logger.info('Training finished.')
+        return model
+
+    def _test(self, model, test_data, logger):
+        logger.info('\nStarting evaluation on test data.')
+
+        test_loss, test_acc = model.evaluate(x=test_data, steps=self._args['test_steps'])
+
+        logger.info('\nFinished evaluation. Loss: {:.4f}, Accuracy: {:.4f}.'.format(test_loss, test_acc))
+        return test_loss, test_acc
 
     def _save_model(self, model):
         model_dir = self._args['out_dir'] + self._args['model_dir']
