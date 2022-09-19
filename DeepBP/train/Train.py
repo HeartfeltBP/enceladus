@@ -61,7 +61,7 @@ class Train():
             'st_units'      : 64,
             'cnn_st_units'  : 64,
             'dropout_1'     : 0.25,
-            'dropout_2'     : .25,
+            'dropout_2'     : 0.25,
             'dense_1'       : 32,
             'dense_2'       : 32,
         }
