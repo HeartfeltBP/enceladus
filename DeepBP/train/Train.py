@@ -41,7 +41,7 @@ class Train():
     def _get_hyperparameters(self):
         config = {
             'input_shape'   : (625, 1),
-            'lr'            : 0.0001,
+            'lr'            : 0.00001,
             'decay'         : 0.0001,
             'kernel_1'      : ( 7),
             'filters_1'     : 64,
@@ -60,8 +60,8 @@ class Train():
             'frame_step'    : 8,
             'st_units'      : 64,
             'cnn_st_units'  : 64,
-            'dropout_1'     : 0.25,
-            'dropout_2'     : 0.25,
+            'dropout_1'     : 0.15,
+            'dropout_2'     : 0.15,
             'dense_1'       : 32,
             'dense_2'       : 32,
         }
