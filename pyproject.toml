@@ -1,14 +1,14 @@
 [tool.poetry]
-name = "DeepBP"
+name = "Enceladus"
 version = "0.1.0"
 description = "Model garden for blood pressure estimation."
 authors = ["Cameron Johnson"]
-license = "None"
+license = "MIT"
 readme = "README.md"
 packages = [{include = "src"}]
 
 [tool.poetry.dependencies]
-python = ">=3.10,<3.11"
+python = ">=3.10,<3.12"
 numpy = "^1.23.2"
 pandas = "^1.4.4"
 jupyter = "^1.0.0"
@@ -18,9 +18,15 @@ plotly = "^5.10.0"
 tqdm = "^4.64.1"
 openpyxl = "^3.0.10"
 scipy = "^1.9.1"
+neurokit2 = "==0.2.0"
+heartpy = "==1.2.7"
+wfdb = "==3.4.1"
+ipywidgets = "==7.7.1"
+jupyterlab-widgets = "==1.1.1"
+widgetsnbextension = "==3.6.1"
+pymongo = "==4.2.0"
 keras = "^2.10.0"
 tensorflow = "^2.10.0"
-
 
 [build-system]
 requires = ["poetry-core"]
