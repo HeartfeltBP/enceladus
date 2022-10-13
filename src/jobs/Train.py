@@ -2,9 +2,8 @@ import os
 import gc
 import wandb
 import tensorflow as tf
-from DeepBP.utils import create_model, callbacks
-from DeepBP.utils import set_all_seeds, get_logger, get_strategy, get_callbacks
-from database_tools.utils import ReadTFRecords
+from src.utils import create_model, callbacks
+from src.utils import set_all_seeds, get_logger, get_strategy, get_callbacks
 
 
 class Train():
