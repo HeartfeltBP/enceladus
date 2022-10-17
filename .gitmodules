@@ -1,3 +1,0 @@
-[submodule "src/utils/database_tools"]
-	path = src/utils/database_tools
-	url = https://github.com/HeartfeltBP/database_tools.git

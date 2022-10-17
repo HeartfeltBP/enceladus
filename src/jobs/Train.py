@@ -1,10 +1,10 @@
 import os
 import gc
+import sys
 import wandb
 import tensorflow as tf
 from src.models import UNet
-from src.utils import set_all_seeds, get_logger, get_strategy, get_callbacks
-from src.utils.database_tools.database_tools.tools import RecordsHandler
+from src.utils import RecordsHandler, set_all_seeds, get_logger, get_strategy, get_callbacks
 
 
 class Train():
