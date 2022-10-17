@@ -2,8 +2,9 @@ import os
 import gc
 import wandb
 import tensorflow as tf
-from src.utils import create_model, callbacks
+from src.models import UNet
 from src.utils import set_all_seeds, get_logger, get_strategy, get_callbacks
+from src.utils.database_tools.database_tools.tools import RecordsHandler
 
 
 class Train():
@@ -12,18 +13,18 @@ class Train():
         return
 
     def run(self):
-        logger1 = get_logger('output/train.log', 'w')
-        logger1.info('Starting training pipeline')
+        logger = get_logger('output/train.log', 'w')
+        logger.info('Starting training pipeline')
 
-        model, callbacks = self._setup(logger=logger1)
+        model, callbacks = self._setup(logger=logger)
         # model.summary(positions=[.33, .60, .67, 1.])
 
         dataset = self._load_dataset()
 
-        model = self._train(model, callbacks, dataset, logger1)
+        model = self._train(model, callbacks, dataset, logger)
         self._save_model(model)
 
-        test_loss, test_acc = self._test(model, dataset['test'], logger1)
+        test_loss, test_acc = self._test(model, dataset['test'], logger)
 
         if self._args['use_wandb_tracking']:
             wandb.log({"Test loss":test_loss, "Test accuracy": test_acc})
@@ -34,46 +35,49 @@ class Train():
         del model
         gc.collect()
 
-        logger1.info('\nDone.')
+        logger.info('\nDone.')
         return
 
+    def _setup(self, logger):
+        # Set seed for reproducability
+        set_all_seeds(self._args['seed'])
+
+        # Get model config
+        model_config = self._get_hyperparameters()
+
+        #initialize W&B logging if requested
+        if self._args['use_wandb_tracking']:
+            wandb.tensorboard.patch(root_logdir=self._args['out_dir'])
+            wandb.init(
+                config=model_config,
+                entity=self._args['wandb_entity'],
+                project=self._args['wandb_project'],
+                group=str(self._args['wandb_project']),
+                sync_tensorboard=True,
+            )
+
+        # Determine strategy
+        strategy = get_strategy(logger)
+
+        # Model setup
+        model = self._initialize_model(strategy, model_config)
+
+        # Initialize callbacks
+        callbacks = get_callbacks(
+            validation_dataset=None,
+            steps_valid=None,
+            logger1=logger,
+            args=self._args,
+        )
+        return model, callbacks
+
     def _get_hyperparameters(self):
-        config = {
-            'model'         : 'deepbp_2',
-            'input_shape'   : (625, 1),
-            'lr'            : 0.00001,
-            'decay'         : 0.00001,
-            'kernel_1'      : (7),
-            'filters_1'     : 64,
-            'stride_1'      : (2),
-            'max_pooling_1' : (3),
-            'kernel_2'      : [(3), (3)],
-            'filters_2'     : [64, 64],
-            'kernel_3'      : [(3), (3)],
-            'filters_3'     : [128, 128],
-            'stride_3'      : (2),
-            'kernel_4'      : [(3), (3)],
-            'filters_4'     : [256, 256],
-            'stride_4'      : (2),
-            'kernel_5'      : [(3), (3)],
-            'filters_5'     : [512, 512],
-            'stride_5'      : (2),
-            'pooling'       : (2),
-            'dense_0'       : 1024,
-            'frame_length'  : 125,
-            'frame_step'    : 8,
-            'st_units'      : 64,
-            'cnn_st_units'  : 64,
-            'dropout_1'     : 0.15,
-            'dropout_2'     : 0.15,
-            'dense_1'       : 32,
-            'dense_2'       : 32,
-        }
+        config = None
         return config
 
     def _initialize_model(self, strategy, config):
         with strategy.scope():
-            model = create_model(config)
+            model = UNet(config).create_model()
             optimizer = tf.keras.optimizers.RMSprop(learning_rate=config['lr'], decay=config['decay'])
             model.compile(optimizer=optimizer,
                           loss='mse',
@@ -91,63 +95,22 @@ class Train():
         )
         return model
 
-    def _setup(self, logger):
-        # Set seed for reproducability
-        set_all_seeds(self._args['seed'])
-
-        # Get model config
-        model_config = self._get_hyperparameters()
-
-        #initialize W&B logging if requested
-        if self._args['use_wandb_tracking']:
-            wandb.tensorboard.patch(root_logdir=self._args["out_dir"])
-            wandb.init(
-                config=model_config,
-                entity=self._args["wandb_entity"],
-                project=self._args["wandb_project"],
-                group=str(self._args["wandb_project"]),
-                sync_tensorboard=True,
-            )
-
-        # Determine strategy
-        strategy = get_strategy(logger)
-
-        # Model setup
-        model = self._initialize_model(strategy, model_config)
-
-        # Initialize callbacks
-        callbacks = get_callbacks(
-            validation_dataset=None,
-            steps_valid=None,
-            logger1=logger,
-            args=self._args,
-        )
-
-        return model, callbacks
-
     def _load_dataset(self, seed=1337):
         AUTOTUNE = tf.data.experimental.AUTOTUNE
 
         options = tf.data.Options()
         options.experimental_deterministic = False
 
-        dataset = ReadTFRecords(data_dir=self._args['tfrecords_dir'],
-                                method=self._args['data_method'],
-                                n_cores=10,
-                                AUTOTUNE=AUTOTUNE).run()
+        handler = RecordsHandler(data_dir=self._args['records_dir'])
+        dataset = handler.read_records(n_cores=10, AUTOTUNE=AUTOTUNE)
+
         train = dataset['train'].prefetch(AUTOTUNE)
         val = dataset['val'].prefetch(AUTOTUNE)
         test = dataset['test'].prefetch(AUTOTUNE)
 
-        train = train.shuffle(10, seed=seed, reshuffle_each_iteration=True).batch(self._args['batch_size'])
-        val = val.shuffle(10, seed=seed, reshuffle_each_iteration=True).batch(self._args['batch_size'])
-        test = test.shuffle(10, seed=seed, reshuffle_each_iteration=True).batch(self._args['batch_size'])
-
-        # Make the data infinite.
-        # train = train.repeat()
-        # val = val.repeat()
-        # test = test.repeat()
-
+        train = train.shuffle(1000, seed=seed, reshuffle_each_iteration=True).batch(self._args['batch_size'])
+        val = val.shuffle(1000, seed=seed, reshuffle_each_iteration=True).batch(self._args['batch_size'])
+        test = test.shuffle(1000, seed=seed, reshuffle_each_iteration=True).batch(self._args['batch_size'])
         return dict(train=train, val=val, test=test)
 
     def _train(self, model, callbacks, data, logger):
