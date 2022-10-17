@@ -42,14 +42,10 @@ class Train():
         # Set seed for reproducability
         set_all_seeds(self._args['seed'])
 
-        # Get model config
-        model_config = self._get_hyperparameters()
-
         #initialize W&B logging if requested
         if self._args['use_wandb_tracking']:
             wandb.tensorboard.patch(root_logdir=self._args['out_dir'])
             wandb.init(
-                config=model_config,
                 entity=self._args['wandb_entity'],
                 project=self._args['wandb_project'],
                 group=str(self._args['wandb_project']),
@@ -60,7 +56,7 @@ class Train():
         strategy = get_strategy(logger)
 
         # Model setup
-        model = self._initialize_model(strategy, model_config)
+        model = self._initialize_model(strategy)
 
         # Initialize callbacks
         callbacks = get_callbacks(
@@ -71,14 +67,10 @@ class Train():
         )
         return model, callbacks
 
-    def _get_hyperparameters(self):
-        config = None
-        return config
-
-    def _initialize_model(self, strategy, config):
+    def _initialize_model(self, strategy):
         with strategy.scope():
-            model = UNet(config).create_model()
-            optimizer = tf.keras.optimizers.RMSprop(learning_rate=config['lr'], decay=config['decay'])
+            model = UNet().create_model()
+            optimizer = tf.keras.optimizers.Adam(learning_rate=self._args['learning_rate'])
             model.compile(optimizer=optimizer,
                           loss='mse',
                           metrics=['mae'])

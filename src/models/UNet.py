@@ -3,8 +3,8 @@ from keras.layers import Input, Conv1D, BatchNormalization, Activation, MaxPooli
 
 
 class UNet():
-    def __init__(self, config):
-        self._config = config
+    def __init__(self) -> None:
+        pass
 
     def create_model(self):
         input = Input(shape=(256, 1))
