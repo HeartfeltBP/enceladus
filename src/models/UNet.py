@@ -7,7 +7,7 @@ class UNet():
         pass
 
     def create_model(self):
-        input = Input(shape=(256, 1))
+        input = Input(shape=(256, 1), name='ppg')
         x1, skip1 = self.contraction_block(input, filters=64, dropout=False)
         x2, skip2 = self.contraction_block(x1, filters=128, dropout=False)
         x3, skip3 = self.contraction_block(x2, filters=256, dropout=False)
