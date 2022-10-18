@@ -71,20 +71,23 @@ class Train():
         with strategy.scope():
             model = UNet().create_model()
             optimizer = tf.keras.optimizers.Adam(learning_rate=self._args['learning_rate'])
-            model.compile(optimizer=optimizer,
-                          loss='mse',
-                          metrics=['mae'])
-        
-        tf.keras.utils.plot_model(
-            model,
-            to_file=self._args['out_dir'] + 'model.png',
-            show_shapes=True,
-            show_dtype=False,
-            show_layer_names=True,
-            rankdir='TB',
-            expand_nested=False,
-            dpi=300,
-        )
+            model.compile(
+                optimizer=optimizer,
+                loss='mse',
+                metrics=['mae'],
+            )
+
+        # Requires pydot and graphiz
+        # tf.keras.utils.plot_model(
+        #     model,
+        #     to_file=self._args['out_dir'] + 'model.png',
+        #     show_shapes=True,
+        #     show_dtype=False,
+        #     show_layer_names=True,
+        #     rankdir='TB',
+        #     expand_nested=False,
+        #     dpi=300,
+        # )
         return model
 
     def _load_dataset(self, seed=1337):
@@ -100,9 +103,9 @@ class Train():
         val = dataset['val'].prefetch(AUTOTUNE)
         test = dataset['test'].prefetch(AUTOTUNE)
 
-        train = train.shuffle(1000, seed=seed, reshuffle_each_iteration=True).batch(self._args['batch_size'])
-        val = val.shuffle(1000, seed=seed, reshuffle_each_iteration=True).batch(self._args['batch_size'])
-        test = test.shuffle(1000, seed=seed, reshuffle_each_iteration=True).batch(self._args['batch_size'])
+        train = train.shuffle(10, seed=seed, reshuffle_each_iteration=True).batch(self._args['batch_size'])
+        val = val.shuffle(10, seed=seed, reshuffle_each_iteration=True).batch(self._args['batch_size'])
+        test = test.shuffle(10, seed=seed, reshuffle_each_iteration=True).batch(self._args['batch_size'])
         return dict(train=train, val=val, test=test)
 
     def _train(self, model, callbacks, data, logger):
