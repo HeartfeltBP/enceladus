@@ -110,12 +110,13 @@ class Train():
 
     def _train(self, model, callbacks, data, logger):
         logger.info('Starting training.')
+        steps_per_epoch = int(300000 / self._args['batch_size'])
 
         model.fit(
             data['train'],
             validation_data=data['val'],
             validation_steps=self._args['val_steps'],
-            steps_per_epoch=self._args['steps_per_epoch'],
+            steps_per_epoch=steps_per_epoch,
             epochs=self._args['epochs'],
             callbacks=callbacks,
             use_multiprocessing=self._args['use_multiprocessing'],
