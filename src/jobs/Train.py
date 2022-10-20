@@ -22,21 +22,23 @@ class Train():
         dataset = self._load_dataset()
 
         model = self._train(model, callbacks, dataset, logger)
-        self._save_model(model)
+        # self._save_model(model)
 
         test_loss, test_acc = self._test(model, dataset['test'], logger)
+
+        pred = model.predict(dataset['test'])
 
         if self._args['use_wandb_tracking']:
             wandb.log({"Test loss":test_loss, "Test accuracy": test_acc})
             wandb.finish()
 
         # Clean up, free memory (not reliable though)
-        tf.keras.backend.clear_session() 
-        del model
-        gc.collect()
+        # tf.keras.backend.clear_session() 
+        # del model
+        # gc.collect()
 
         logger.info('\nDone.')
-        return
+        return pred, dataset['test'], model
 
     def _setup(self, logger):
         # Set seed for reproducability
@@ -105,17 +107,21 @@ class Train():
 
         train = train.shuffle(10, seed=seed, reshuffle_each_iteration=True).batch(self._args['batch_size'])
         val = val.shuffle(10, seed=seed, reshuffle_each_iteration=True).batch(self._args['batch_size'])
-        test = test.shuffle(10, seed=seed, reshuffle_each_iteration=True).batch(self._args['batch_size'])
+        test = test.batch(self._args['batch_size'])
+
+        train = train.repeat()
+        val = val.repeat()
         return dict(train=train, val=val, test=test)
 
     def _train(self, model, callbacks, data, logger):
         logger.info('Starting training.')
-        steps_per_epoch = int(300000 / self._args['batch_size'])
+        steps_per_epoch = int((300000 * 0.7) / self._args['batch_size']) / 5
+        validation_steps = int((300000 * 0.15) / self._args['batch_size']) / 5
 
         model.fit(
             data['train'],
             validation_data=data['val'],
-            validation_steps=self._args['val_steps'],
+            validation_steps=validation_steps,
             steps_per_epoch=steps_per_epoch,
             epochs=self._args['epochs'],
             callbacks=callbacks,
@@ -128,7 +134,8 @@ class Train():
     def _test(self, model, test_data, logger):
         logger.info('\nStarting evaluation on test data.')
 
-        test_loss, test_acc = model.evaluate(x=test_data, steps=self._args['test_steps'])
+        test_steps = int((300000 * 0.15) / self._args['batch_size'])
+        test_loss, test_acc = model.evaluate(x=test_data, steps=test_steps)
 
         logger.info('\nFinished evaluation. Loss: {:.4f}, Accuracy: {:.4f}.'.format(test_loss, test_acc))
         return test_loss, test_acc
