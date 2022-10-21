@@ -2,7 +2,8 @@ import tensorflow as tf
 from keras.models import Model
 from keras.layers import Input, Conv1D, BatchNormalization, Activation, MaxPooling1D, UpSampling1D, Concatenate, Dropout
 from keras.regularizers import L1, L2, L1L2
-from keras.initializers import GlorotUniform, HeUniform
+from keras.initializers.initializers_v2 import GlorotUniform, HeUniform
+
 
 class UNet():
     def __init__(self, config):
@@ -40,8 +41,8 @@ class UNet():
     def contraction_block(self, input, filters, dropout):
         x = self.basic_block(input, filters, 3)
         x = self.basic_block(x, filters, 3)
-        if dropout:
-            x = Dropout(rate=self._config['dropout_1'])(x) if self._config['dropout'] else x
+        if dropout and self._config['dropout']:
+            x = Dropout(rate=self._config['dropout_1'])(x)
             skip = x
         else:
             skip = x
