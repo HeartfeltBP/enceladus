@@ -93,7 +93,7 @@ def get_strategy(logger1, xla=0, fp16=0, no_cuda=0):
     logger1.info(f"Using strategy: {strategy}")
     return strategy
 
-def get_callbacks(validation_dataset, steps_valid, logger1, args):
+def get_callbacks(validation_dataset, logger1, args):
     logger1.info('\nSetting up callbacks.')
 
     tensorboard_dir = args['out_dir'] + 'tensorboard/'
@@ -117,7 +117,7 @@ def get_callbacks(validation_dataset, steps_valid, logger1, args):
             log_weights=True,
             monitor='val_loss',
             generator=validation_dataset,
-            validation_steps=steps_valid,
+            validation_steps=args['validation_steps'],
             log_evaluation=True
         )
         callbacks.append(wandb_callback)
