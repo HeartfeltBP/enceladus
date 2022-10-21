@@ -83,6 +83,8 @@ class UNet():
             reg = L2(factor)
         elif regularizer == 'L1L2':
             reg = L1L2(factor)
+        else:
+            reg = None
         return reg
 
     def _get_initializer(self, initializer):

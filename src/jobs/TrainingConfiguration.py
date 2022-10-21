@@ -50,7 +50,7 @@ class TrainingConfiguration():
             try:
                 value = kwargs[setting]
                 if setting not in ['records_dir', 'out_dir', 'wandb_entity',
-                                   'wandb_project', 'activation', 'init_method']:
+                                   'wandb_project', 'activation', 'init_method', 'regularizer']:
                     value = ast.literal_eval(value)
                 dic[setting] = value
             except KeyError:
