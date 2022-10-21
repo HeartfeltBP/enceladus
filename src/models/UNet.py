@@ -1,3 +1,4 @@
+import tensorflow as tf
 from keras.models import Model
 from keras.layers import Input, Conv1D, BatchNormalization, Activation, MaxPooling1D, UpSampling1D, Concatenate, Dropout
 
@@ -23,11 +24,11 @@ class UNet():
     def contraction_block(self, input, filters, dropout=False):
         x = Conv1D(filters=filters, kernel_size=(3), padding='same')(input)
         x = BatchNormalization()(x)
-        x = Activation('relu')(x)
+        x = Activation(tf.nn.leaky_relu)(x)
 
         x = Conv1D(filters=filters, kernel_size=(3), padding='same')(x)
         x = BatchNormalization()(x)
-        x = Activation('relu')(x)
+        x = Activation(tf.nn.leaky_relu)(x)
 
         if dropout:
             x = Dropout(rate=0.5)(x)
@@ -41,11 +42,11 @@ class UNet():
     def bottleneck_block(self, input, filters):
         x = Conv1D(filters=filters, kernel_size=(3), padding='same')(input)
         x = BatchNormalization()(x)
-        x = Activation('relu')(x)
+        x = Activation(tf.nn.leaky_relu)(x)
 
         x = Conv1D(filters=filters, kernel_size=(3), padding='same')(x)
         x = BatchNormalization()(x)
-        x = Activation('relu')(x)
+        x = Activation(tf.nn.leaky_relu)(x)
 
         x = Dropout(rate=0.5)(x)
         x = UpSampling1D(size=2)(x)
@@ -54,17 +55,17 @@ class UNet():
     def expansion_block(self, input, skip, filters):
         x = Conv1D(filters=filters, kernel_size=(2), padding='same')(input)
         x = BatchNormalization()(x)
-        x = Activation('relu')(x)
+        x = Activation(tf.nn.leaky_relu)(x)
 
         x = Concatenate()([x, skip])
 
         x = Conv1D(filters=filters, kernel_size=(3), padding='same')(x)
         x = BatchNormalization()(x)
-        x = Activation('relu')(x)
+        x = Activation(tf.nn.leaky_relu)(x)
 
         x = Conv1D(filters=filters, kernel_size=(3), padding='same')(x)
         x = BatchNormalization()(x)
-        x = Activation('relu')(x)
+        x = Activation(tf.nn.leaky_relu)(x)
 
         x = UpSampling1D(size=2)(x)
         return x
@@ -72,17 +73,17 @@ class UNet():
     def output_block(self, input, skip, filters):
         x = Conv1D(filters=filters, kernel_size=(2), padding='same')(input)
         x = BatchNormalization()(x)
-        x = Activation('relu')(x)
+        x = Activation(tf.nn.leaky_relu)(x)
 
         x = Concatenate()([x, skip])
 
         x = Conv1D(filters=filters, kernel_size=(3), padding='same')(x)
         x = BatchNormalization()(x)
-        x = Activation('relu')(x)
+        x = Activation(tf.nn.leaky_relu)(x)
 
         x = Conv1D(filters=filters, kernel_size=(3), padding='same')(x)
         x = BatchNormalization()(x)
-        x = Activation('relu')(x)
+        x = Activation(tf.nn.leaky_relu)(x)
 
         x = Conv1D(filters=2, kernel_size=(3), padding='same')(x)
         output = Conv1D(filters=1, kernel_size=(3), padding='same')(x)

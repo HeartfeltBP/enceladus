@@ -22,23 +22,23 @@ class Train():
         dataset = self._load_dataset()
 
         model = self._train(model, callbacks, dataset, logger)
-        # self._save_model(model)
+        self._save_model(model)
 
         test_loss, test_acc = self._test(model, dataset['test'], logger)
 
-        pred = model.predict(dataset['test'])
+        # pred = model.predict(dataset['test'])
 
         if self._args['use_wandb_tracking']:
             wandb.log({"Test loss":test_loss, "Test accuracy": test_acc})
             wandb.finish()
 
         # Clean up, free memory (not reliable though)
-        # tf.keras.backend.clear_session() 
-        # del model
-        # gc.collect()
+        tf.keras.backend.clear_session() 
+        del model
+        gc.collect()
 
         logger.info('\nDone.')
-        return pred, dataset['test'], model
+        return
 
     def _setup(self, logger):
         # Set seed for reproducability
@@ -115,8 +115,9 @@ class Train():
 
     def _train(self, model, callbacks, data, logger):
         logger.info('Starting training.')
-        steps_per_epoch = int((300000 * 0.7) / self._args['batch_size'])
-        validation_steps = int((300000 * 0.15) / self._args['batch_size'])
+
+        steps_per_epoch = int((self._args['data_size'] * self._args['data_split'][0]) / self._args['batch_size'])
+        validation_steps = int((self._args['data_size'] * self._args['data_split'][1]) / self._args['batch_size'])
 
         model.fit(
             data['train'],
@@ -134,10 +135,10 @@ class Train():
     def _test(self, model, test_data, logger):
         logger.info('\nStarting evaluation on test data.')
 
-        test_steps = int((300000 * 0.15) / self._args['batch_size'])
+        test_steps = int((self._args['data_size'] * self._args['data_split'][2]) / self._args['batch_size'])
         test_loss, test_acc = model.evaluate(x=test_data, steps=test_steps)
 
-        logger.info('\nFinished evaluation. Loss: {:.4f}, Accuracy: {:.4f}.'.format(test_loss, test_acc))
+        logger.info('\nFinished evaluation. Loss (MSE): {:.4f}, MAE: {:.4f}.'.format(test_loss, test_acc))
         return test_loss, test_acc
 
     def _save_model(self, model):
