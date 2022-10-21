@@ -115,8 +115,8 @@ class Train():
 
     def _train(self, model, callbacks, data, logger):
         logger.info('Starting training.')
-        steps_per_epoch = int((300000 * 0.7) / self._args['batch_size']) / 5
-        validation_steps = int((300000 * 0.15) / self._args['batch_size']) / 5
+        steps_per_epoch = int((300000 * 0.7) / self._args['batch_size'])
+        validation_steps = int((300000 * 0.15) / self._args['batch_size'])
 
         model.fit(
             data['train'],
