@@ -18,10 +18,8 @@ class Train():
         logger.info('Starting training pipeline')
 
         model, callbacks, dataset = self._setup(logger=logger)
-        # model.summary(positions=[.33, .60, .67, 1.])
 
         model = self._train(model, callbacks, dataset, logger)
-        self._save_model(model)
 
         test_loss, test_acc = self._test(model, dataset['test'], logger)
 
@@ -72,7 +70,7 @@ class Train():
 
     def _initialize_model(self, strategy):
         with strategy.scope():
-            model = UNet().create_model()
+            model = UNet(self._config).create_model()
             optimizer = tf.keras.optimizers.Adam(
                 learning_rate=self._config['learning_rate'],
                 beta_1=self._config['beta_1'],
@@ -84,18 +82,6 @@ class Train():
                 loss='mse',
                 metrics=['mae'],
             )
-
-        # Requires pydot and graphiz
-        # tf.keras.utils.plot_model(
-        #     model,
-        #     to_file=self._args['out_dir'] + 'model.png',
-        #     show_shapes=True,
-        #     show_dtype=False,
-        #     show_layer_names=True,
-        #     rankdir='TB',
-        #     expand_nested=False,
-        #     dpi=300,
-        # )
         return model
 
     def _load_dataset(self, seed=1337):
