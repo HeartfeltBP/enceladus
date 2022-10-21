@@ -40,8 +40,10 @@ class Train():
         set_all_seeds(self._args['seed'])
 
         #initialize W&B logging if requested
-        os.mkdir(self._args['out_dir'] + 'wandb')
         if self._args['use_wandb_tracking']:
+            wandb_path = self._args['out_dir'] + 'wandb'
+            if not os.path.exists(wandb_path):
+                os.mkdir(self._args['out_dir'] + 'wandb')
             wandb.tensorboard.patch(root_logdir=self._args['out_dir'])
             wandb.init(
                 entity=self._args['wandb_entity'],

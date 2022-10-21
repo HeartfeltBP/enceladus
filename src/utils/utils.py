@@ -113,11 +113,12 @@ def get_callbacks(validation_dataset, logger1, args):
 
     if args['use_wandb_tracking']:
         wandb_callback = WandbCallback(
+            # training_data=training_dataset,
             # log_gradients=True,
             log_weights=True,
             monitor='val_loss',
-            # generator=validation_dataset,
-            # validation_steps=args['valid_steps'],
+            generator=validation_dataset,
+            validation_steps=args['valid_steps'],
             log_evaluation=True
         )
         callbacks.append(wandb_callback)

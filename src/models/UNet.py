@@ -2,12 +2,14 @@ import tensorflow as tf
 from keras.models import Model
 from keras.layers import Input, Conv1D, BatchNormalization, Activation, MaxPooling1D, UpSampling1D, Concatenate, Dropout
 from keras.regularizers import L1, L2, L1L2
+from keras.initializers import GlorotUniform, HeUniform
 
 class UNet():
     def __init__(self, config):
         self._config = config
         self._act = self._get_activation(self._config['activation'])
-        self._reg = self._get_regularizer(self._config['regularizer'], self._config['reg_factor'])         
+        self._reg = self._get_regularizer(self._config['regularizer'], self._config['reg_factor'])
+        self._ini = self._get_initializer(self._config['init_method'])
 
     def create_model(self):
         input = Input(shape=(256, 1), name='ppg')
@@ -28,6 +30,7 @@ class UNet():
             filters=filters,
             kernel_size=(kernel_size),
             kernel_regularizer=self._reg,
+            kernel_initializer=self._ini,
             padding='same',
         )(input)
         x = BatchNormalization()(x) if self._config['batch_norm'] else x
@@ -38,7 +41,7 @@ class UNet():
         x = self.basic_block(input, filters, 3)
         x = self.basic_block(x, filters, 3)
         if dropout:
-            x = Dropout(rate=self._config['dropout_1'])(x)
+            x = Dropout(rate=self._config['dropout_1'])(x) if self._config['dropout'] else x
             skip = x
         else:
             skip = x
@@ -48,7 +51,7 @@ class UNet():
     def bottleneck_block(self, input, filters):
         x = self.basic_block(input, filters, 3)
         x = self.basic_block(x, filters, 3)
-        x = Dropout(rate=self._config['dropout_2'])(x)
+        x = Dropout(rate=self._config['dropout_2'])(x) if self._config['dropout'] else x
         x = UpSampling1D(size=2)(x)
         return x
 
@@ -65,8 +68,20 @@ class UNet():
         x = Concatenate()([x, skip])
         x = self.basic_block(x, filters, 3)
         x = self.basic_block(x, filters, 3)
-        x = Conv1D(filters=2, kernel_size=(3), kernel_regularizer=self._reg, padding='same')(x)
-        output = Conv1D(filters=1, kernel_size=(3), kernel_regularizer=self._reg, padding='same')(x)
+        x = Conv1D(
+            filters=2,
+                   kernel_size=(3),
+                   kernel_regularizer=self._reg,
+                   kernel_initializer=self._ini,
+                   padding='same',
+        )(x)
+        output = Conv1D(
+            filters=1,
+            kernel_size=(3),
+            kernel_regularizer=self._reg,
+            kernel_initializer=self._ini,
+            padding='same'
+        )(x)
         return output
 
     def _get_activation(self, activation):
@@ -88,5 +103,10 @@ class UNet():
         return reg
 
     def _get_initializer(self, initializer):
-        ini = None
+        if initializer == 'GlorotUniform':
+            ini = GlorotUniform()
+        elif initializer == 'HeUniform':
+            ini = HeUniform()
+        else:
+            ini = None
         return ini
