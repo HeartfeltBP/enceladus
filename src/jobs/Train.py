@@ -11,7 +11,6 @@ class Train():
     def __init__(self, args, config):
         self._args = args
         self._config = config
-        return
 
     def run(self):
         logger = get_logger('output/train.log', 'w')

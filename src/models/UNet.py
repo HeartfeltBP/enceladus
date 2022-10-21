@@ -1,113 +1,103 @@
 import tensorflow as tf
 from keras.models import Model
 from keras.layers import Input, Conv1D, BatchNormalization, Activation, MaxPooling1D, UpSampling1D, Concatenate, Dropout
-from keras.regularizers import L1, L2, L1L2
 from keras.initializers.initializers_v2 import GlorotUniform, HeUniform
+from keras.regularizers import L1, L2, L1L2
 
 
 class UNet():
     def __init__(self, config):
         self._config = config
-        self._act = self._get_activation(self._config['activation'])
-        self._reg = self._get_regularizer(self._config['regularizer'], self._config['reg_factor'])
-        self._ini = self._get_initializer(self._config['init_method'])
+        self._ini, self._act, self._reg = self.get_config_components()
 
-    def create_model(self):
+    def init(self):
         input = Input(shape=(256, 1), name='ppg')
-        x1, skip1 = self.contraction_block(input, filters=64, dropout=False)
-        x2, skip2 = self.contraction_block(x1, filters=128, dropout=False)
-        x3, skip3 = self.contraction_block(x2, filters=256, dropout=False)
-        x4, skip4 = self.contraction_block(x3, filters=512, dropout=True)
-        x5 = self.bottleneck_block(x4, filters=1024)
-        x6 = self.expansion_block(x5, skip4, filters=512)
-        x7 = self.expansion_block(x6, skip3, filters=256)
-        x8 = self.expansion_block(x7, skip2, filters=128)
-        output = self.output_block(x8, skip1, filters=64)
+        x1, skip1 = self.contraction_block(input, filters=64, pooling=True)
+        x2, skip2 = self.contraction_block(x1, filters=128, pooling=True)
+        x3, skip3 = self.contraction_block(x2, filters=256, pooling=True)
+
+        x4 = self.contraction_block(x3, filters=512, pooling=False)
+        x4 = Dropout(self._config['dropout_1'])(x4)
+        skip4 = x4
+        x4 = MaxPooling1D(pool_size=(2))(x4)
+
+        x5 = self.contraction_block(x4, filters=1024, pooling=False)
+        x5 = Dropout(self._config['dropout_2'])(x5)
+        x5 = UpSampling1D(size=2)(x5)
+
+        x6 = self.expansion_block(x5, skip4, filters=512, sampling=True)
+        x7 = self.expansion_block(x6, skip3, filters=256, sampling=True)
+        x8 = self.expansion_block(x7, skip2, filters=128, sampling=True)
+        x9 = self.expansion_block(x8, skip1, filters=64, sampling=False)
+        output = self.output_block(x9)
         model = Model(inputs=[input], outputs=[output], name='unet')
         return model
 
-    def basic_block(self, input, filters, kernel_size):
-        x = Conv1D(
-            filters=filters,
-            kernel_size=(kernel_size),
-            kernel_regularizer=self._reg,
-            kernel_initializer=self._ini,
-            padding='same',
-        )(input)
-        x = BatchNormalization()(x) if self._config['batch_norm'] else x
-        x = Activation(self._act)(x)
-        return x
+    def basic_block(self, input, filters, size):
+            x = Conv1D(
+                filters=filters,
+                kernel_size=(size),
+                kernel_initializer=self._ini,
+                kernel_regularizer=self._reg,
+                padding='same',
+            )(input)
+            x = BatchNormalization()(x) if self._config['batch_norm'] else x
+            x = Activation(self._act)(x)
+            return x
 
-    def contraction_block(self, input, filters, dropout):
+    def contraction_block(self, input, filters, pooling):
         x = self.basic_block(input, filters, 3)
         x = self.basic_block(x, filters, 3)
-        if dropout and self._config['dropout']:
-            x = Dropout(rate=self._config['dropout_1'])(x)
+        if pooling:
             skip = x
+            x = MaxPooling1D(pool_size=(2))(x)
+            return x, skip
         else:
-            skip = x
-        x = MaxPooling1D(pool_size=(2))(x)
-        return x, skip
+            return x
 
-    def bottleneck_block(self, input, filters):
-        x = self.basic_block(input, filters, 3)
-        x = self.basic_block(x, filters, 3)
-        x = Dropout(rate=self._config['dropout_2'])(x) if self._config['dropout'] else x
-        x = UpSampling1D(size=2)(x)
-        return x
-
-    def expansion_block(self, input, skip, filters):
+    def expansion_block(self, input, skip, filters, sampling):
         x = self.basic_block(input, filters, 2)
         x = Concatenate()([x, skip])
         x = self.basic_block(x, filters, 3)
         x = self.basic_block(x, filters, 3)
-        x = UpSampling1D(size=2)(x)
+        x = UpSampling1D(size=2)(x) if sampling else x
         return x
 
-    def output_block(self, input, skip, filters):
-        x = self.basic_block(input, filters, 2)
-        x = Concatenate()([x, skip])
-        x = self.basic_block(x, filters, 3)
-        x = self.basic_block(x, filters, 3)
+    def output_block(self, input):
         x = Conv1D(
             filters=2,
-                   kernel_size=(3),
-                   kernel_regularizer=self._reg,
-                   kernel_initializer=self._ini,
-                   padding='same',
-        )(x)
-        output = Conv1D(
+            kernel_size=(3),
+            kernel_initializer=self._ini,
+            kernel_regularizer=self._reg,
+            padding='same',
+        )(input)
+        x = Conv1D(
             filters=1,
             kernel_size=(3),
-            kernel_regularizer=self._reg,
             kernel_initializer=self._ini,
+            kernel_regularizer=self._reg,
             padding='same'
         )(x)
-        return output
+        return x
 
-    def _get_activation(self, activation):
-        if activation == 'LeakyReLU':
-            act = tf.nn.leaky_relu
-        elif activation == 'ReLU':
-            act = tf.nn.relu
-        return act
+    def get_config_components(self, config):
+        initializers = dict(
+            GlorotUniform=GlorotUniform(),
+            HeUniform=HeUniform(),
+        )
+        activations = dict(
+            ReLU=tf.nn.relu,
+            LeakyReLU=tf.nn.leaky_relu,
+        )
+        regularizers = dict(
+            L1=L1(config['reg_factor']),
+            L2=L2(config['reg_factor']),
+            L1L2=L1L2(config['reg_factor'], config['reg_factor_2'])
+        )
+        ini = initializers[config['initializer']]
+        act = activations[config['activation']]
+        reg = regularizers[config['regularizer']]
+        return ini, act, reg
 
-    def _get_regularizer(self, regularizer, factor):
-        if regularizer == 'L1':
-            reg = L1(factor)
-        elif regularizer == 'L2':
-            reg = L2(factor)
-        elif regularizer == 'L1L2':
-            reg = L1L2(factor)
-        else:
-            reg = None
-        return reg
 
-    def _get_initializer(self, initializer):
-        if initializer == 'GlorotUniform':
-            ini = GlorotUniform()
-        elif initializer == 'HeUniform':
-            ini = HeUniform()
-        else:
-            ini = None
-        return ini
+
