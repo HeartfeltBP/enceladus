@@ -9,7 +9,7 @@ class GetConfiguration():
         config.read(path)
         config.sections()
 
-        pipeline_literals = ['seed', 'data_size', 'data_split']
+        pipeline_literals = ['epochs', 'es_patience', 'seed', 'data_size', 'data_split']
         pipeline = self.get_values(config['pipeline'], pipeline_literals)
 
         model_literals = ['reg_factor_1', 'reg_factor_2']

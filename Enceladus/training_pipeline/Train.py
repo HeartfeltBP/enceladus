@@ -40,9 +40,9 @@ class TrainingPipeline():
         val = val.repeat()
         return dict(train=train, val=val, test=test)
 
-    def _get_callbacks(self, dataset):
+    def _get_callbacks(self, dataset, valid_steps):
         # Tensorboard
-        tensorboard_dir = self._args['out_dir'] + 'tensorboard/'
+        tensorboard_dir = self.config['out_dir'] + 'tensorboard/'
         os.makedirs(tensorboard_dir, exist_ok=True)
         tb_callback = keras.callbacks.TensorBoard(
             log_dir=tensorboard_dir,
@@ -54,7 +54,7 @@ class TrainingPipeline():
         # Early stopping
         es_callback = keras.callbacks.EarlyStopping(
             monitor='val_loss',
-            patience=self._args['es_patience'],
+            patience=self.config['es_patience'],
             verbose=1,
             restore_best_weights=True
         )
@@ -63,13 +63,13 @@ class TrainingPipeline():
         lr_callback = keras.callbacks.LearningRateScheduler(lr_scheduler)
 
         # Weights & Biases
-        wandb_callback = wandb.WandbCallback(
+        wandb_callback = wandb.keras.WandbCallback(
             monitor='val_loss',
-            trainig_data=dataset['train'],
+            training_data=dataset['train'],
             log_weights=True,
             log_gradients=True,
             generator=dataset['val'],
-            validation_steps=self._args['valid_steps'],
+            validation_steps=valid_steps,
             predictions=5,
             input_type='auto',
             output_type='segmentation_mask',
@@ -90,9 +90,6 @@ class TrainingPipeline():
             dropout_2=0.5,
         )
         wandb.init(
-            entity=self.config['wandb_entity'],
-            project=self.config['wandb_project'],
-            group=str(self.config['wandb_project']),
             sync_tensorboard=True,
             config=default_config,
         )
@@ -112,10 +109,11 @@ class TrainingPipeline():
                 metrics=['mae'],
             )
         dataset = self._load_dataset(wandb.config)
-        callbacks = self._get_callbacks(dataset)
 
         steps_per_epoch = int((self.config['data_size'] * self.config['data_split'][0]) / wandb.config.batch_size)
         valid_steps = int((self.config['data_size'] * self.config['data_split'][1]) / wandb.config.batch_size)
+
+        callbacks = self._get_callbacks(dataset, valid_steps)
 
         model.fit(
             dataset['train'],
