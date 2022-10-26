@@ -15,7 +15,11 @@ class TrainingPipeline():
     def run(self):
         set_all_seeds(self.config['seed'])
         self.strategy = get_strategy()
-        sweep_id = wandb.sweep(self.sweep_config, entity=self.config['wandb_entity'], project=self.config['wandb_project'])
+        sweep_id = wandb.sweep(
+            self.sweep_config,
+            entity=self.config['wandb_entity'],
+            project=self.config['wandb_project'],
+        )
         wandb.agent(sweep_id, function=self._train, count=10)
         return
 
@@ -72,9 +76,10 @@ class TrainingPipeline():
             generator=dataset['val'],
             validation_steps=valid_steps,
             log_evaluation=True,
+            log_weights=True,
         )
 
-        callbacks = [tb_callback, es_callback, lr_callback, wandb_callback]
+        callbacks = [tb_callback, es_callback, lr_callback]
         return callbacks
 
     def _train(self):
@@ -87,7 +92,8 @@ class TrainingPipeline():
             dropout_1=0.5,
             dropout_2=0.5,
         )
-        wandb.init(sync_tensorboard=True, config=default_config)
+        wandb.tensorboard.patch(root_logdir=self.config['out_dir'])
+        wandb.init(sync_tensorboard=True, config=default_config, group=str(self.config['wandb_project']))
         self.model_config['dropout_1'] = wandb.config.dropout_1
         self.model_config['dropout_2'] = wandb.config.dropout_2
         with self.strategy.scope():
@@ -105,8 +111,8 @@ class TrainingPipeline():
             )
         dataset = self._load_dataset(wandb.config)
 
-        steps_per_epoch = int((300000 * 0.70) / wandb.config.batch_size)
-        valid_steps = int((300000 * 0.15) / wandb.config.batch_size)
+        steps_per_epoch = int((self.config['data_size'] * self.config['data_split'][0]) / wandb.config.batch_size)
+        valid_steps = int((self.config['data_size'] * self.config['data_split'][1]) / wandb.config.batch_size)
 
         callbacks = self._get_callbacks(dataset, valid_steps)
 
@@ -116,7 +122,7 @@ class TrainingPipeline():
             validation_data=dataset['val'],
             validation_steps=valid_steps,
             steps_per_epoch=steps_per_epoch,
-            epochs=20,
+            epochs=self.config['epochs'],
             callbacks=callbacks,
             use_multiprocessing=True,
             verbose=1,
