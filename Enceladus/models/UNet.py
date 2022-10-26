@@ -1,3 +1,4 @@
+from mimetypes import init
 import tensorflow as tf
 from keras.models import Model
 from keras.layers import Input, Conv1D, BatchNormalization, Activation, MaxPooling1D, UpSampling1D, Concatenate, Dropout
@@ -7,8 +8,11 @@ from keras.regularizers import L1, L2, L1L2
 
 class UNet():
     def __init__(self, config):
-        self._config = config
-        self._ini, self._act, self._reg = self.get_config_components()
+        self.config = config
+        ini, act, reg = self.get_model_components(self.config)
+        self.ini = ini
+        self.act = act
+        self.reg = reg
 
     def init(self):
         input = Input(shape=(256, 1), name='ppg')
@@ -17,12 +21,12 @@ class UNet():
         x3, skip3 = self.contraction_block(x2, filters=256, pooling=True)
 
         x4 = self.contraction_block(x3, filters=512, pooling=False)
-        x4 = Dropout(self._config['dropout_1'])(x4)
+        x4 = Dropout(self.config['dropout_1'])(x4)
         skip4 = x4
         x4 = MaxPooling1D(pool_size=(2))(x4)
 
         x5 = self.contraction_block(x4, filters=1024, pooling=False)
-        x5 = Dropout(self._config['dropout_2'])(x5)
+        x5 = Dropout(self.config['dropout_2'])(x5)
         x5 = UpSampling1D(size=2)(x5)
 
         x6 = self.expansion_block(x5, skip4, filters=512, sampling=True)
@@ -33,16 +37,44 @@ class UNet():
         model = Model(inputs=[input], outputs=[output], name='unet')
         return model
 
+    def get_model_components(self, config):
+        initializers = dict(
+            GlorotUniform=GlorotUniform(),
+            HeUniform=HeUniform(),
+        )
+        activations = dict(
+            ReLU=tf.nn.relu,
+            LeakyReLU=tf.nn.leaky_relu,
+        )
+        regularizers = dict(
+            L1=L1(config['reg_factor_1']),
+            L2=L2(config['reg_factor_1']),
+            L1L2=L1L2(config['reg_factor_1'], config['reg_factor_2']),
+        )
+        if config['initializer'] != 'None':
+            ini = initializers[config['initializer']]
+        else:
+            ini = None
+        if config['activation'] != 'None':
+            act = activations[config['activation']]
+        else:
+            act = None
+        if config['regularizer'] != 'None':
+            reg = regularizers[config['regularizer']]
+        else:
+            reg = None
+        return ini, act, reg
+
     def basic_block(self, input, filters, size):
             x = Conv1D(
                 filters=filters,
                 kernel_size=(size),
-                kernel_initializer=self._ini,
-                kernel_regularizer=self._reg,
+                kernel_initializer=self.ini,
+                kernel_regularizer=self.reg,
                 padding='same',
             )(input)
-            x = BatchNormalization()(x) if self._config['batch_norm'] else x
-            x = Activation(self._act)(x)
+            x = BatchNormalization()(x) if self.config['batch_norm'] else x
+            x = Activation(self.act)(x)
             return x
 
     def contraction_block(self, input, filters, pooling):
@@ -67,38 +99,15 @@ class UNet():
         x = Conv1D(
             filters=2,
             kernel_size=(3),
-            kernel_initializer=self._ini,
-            kernel_regularizer=self._reg,
+            kernel_initializer=self.ini,
+            kernel_regularizer=self.reg,
             padding='same',
         )(input)
         x = Conv1D(
             filters=1,
             kernel_size=(3),
-            kernel_initializer=self._ini,
-            kernel_regularizer=self._reg,
+            kernel_initializer=self.ini,
+            kernel_regularizer=self.reg,
             padding='same'
         )(x)
         return x
-
-    def get_config_components(self):
-        initializers = dict(
-            GlorotUniform=GlorotUniform(),
-            HeUniform=HeUniform(),
-        )
-        activations = dict(
-            ReLU=tf.nn.relu,
-            LeakyReLU=tf.nn.leaky_relu,
-        )
-        regularizers = dict(
-            L1=L1(self._config['reg_factor_1']),
-            L2=L2(self._config['reg_factor_1']),
-            L1L2=L1L2(self._config['reg_factor_1'], self._config['reg_factor_2']),
-            none=None,
-        )
-        ini = initializers[self._config['initializer']]
-        act = activations[self._config['activation']]
-        reg = regularizers[self._config['regularizer']]
-        return ini, act, reg
-
-
-
