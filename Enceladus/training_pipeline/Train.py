@@ -69,14 +69,8 @@ class TrainingPipeline():
         # Weights & Biases
         wandb_callback = wandb.keras.WandbCallback(
             monitor='val_loss',
-            # training_data=dataset['train'],
-            # log_gradients=True,
-            log_weights=True,
             generator=dataset['val'],
             validation_steps=valid_steps,
-            predictions=5,
-            input_type='auto',
-            output_type='segmentation_mask',
             log_evaluation=True,
         )
 
@@ -116,6 +110,7 @@ class TrainingPipeline():
 
         callbacks = self._get_callbacks(dataset, valid_steps)
 
+        print('Fitting...')
         model.fit(
             dataset['train'],
             validation_data=dataset['val'],
@@ -123,7 +118,7 @@ class TrainingPipeline():
             steps_per_epoch=steps_per_epoch,
             epochs=20,
             callbacks=callbacks,
-            use_multiprocessing=False,
+            use_multiprocessing=True,
             verbose=1,
         )
         return
