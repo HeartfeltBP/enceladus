@@ -80,7 +80,7 @@ class UNet():
         )(x)
         return x
 
-    def get_config_components(self, config):
+    def get_config_components(self):
         initializers = dict(
             GlorotUniform=GlorotUniform(),
             HeUniform=HeUniform(),
@@ -90,13 +90,14 @@ class UNet():
             LeakyReLU=tf.nn.leaky_relu,
         )
         regularizers = dict(
-            L1=L1(config['reg_factor']),
-            L2=L2(config['reg_factor']),
-            L1L2=L1L2(config['reg_factor'], config['reg_factor_2'])
+            L1=L1(self._config['reg_factor_1']),
+            L2=L2(self._config['reg_factor_1']),
+            L1L2=L1L2(self._config['reg_factor_1'], self._config['reg_factor_2']),
+            none=None,
         )
-        ini = initializers[config['initializer']]
-        act = activations[config['activation']]
-        reg = regularizers[config['regularizer']]
+        ini = initializers[self._config['initializer']]
+        act = activations[self._config['activation']]
+        reg = regularizers[self._config['regularizer']]
         return ini, act, reg
 
 
