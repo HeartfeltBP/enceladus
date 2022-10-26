@@ -16,7 +16,7 @@ class GetConfiguration():
         model = self.get_values(config['model'], model_literals)
 
         sweep_literals = ['batch_size', 'learning_rate', 'beta_1', 'beta_2', 'epsilon', 'dropout_1', 'dropout_2']
-        sweep = self.get_sweep_values(config['sweep'], sweep_literals)
+        sweep = self.get_sweep_values(config['sweep'], sweep_literals, pipeline)
         return pipeline, model, sweep
 
     def get_values(self, config, literals):
@@ -27,7 +27,7 @@ class GetConfiguration():
             out[param] = value
         return out
 
-    def get_sweep_values(self, config, literals):
+    def get_sweep_values(self, config, literals, pipeline):
         out = dict()
         for param, value in config.items():
             if param in literals:
