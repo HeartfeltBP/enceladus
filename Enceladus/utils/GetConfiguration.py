@@ -35,10 +35,10 @@ class GetConfiguration():
             out[param] = dict(values=value)
         
         out = dict(
-            method='random',
+            method='bayes',
             metric=dict(
-                name='accuracy',
-                goal='maximize',
+                name='val_mae',
+                goal='minimize',
             ),
             parameters=out
         )
