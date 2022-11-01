@@ -33,11 +33,11 @@ class GetConfiguration():
             if param in literals:
                 value = ast.literal_eval(value)
             out[param] = dict(values=value)
-        
+
         out = dict(
             method='bayes',
             metric=dict(
-                name='val_mae',
+                name='val_loss',
                 goal='minimize',
             ),
             parameters=out

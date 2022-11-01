@@ -73,15 +73,12 @@ class TrainingPipeline():
         # )
 
         # Weights & Biases
-        # wandb_callback = wandb.keras.WandbCallback(
-        #     monitor='val_loss',
-        #     generator=dataset['val'],
-        #     validation_steps=valid_steps,
-        #     log_evaluation=True,
-        #     log_weights=True,
-        # )
+        wandb_callback = wandb.keras.WandbCallback(
+            monitor='val_loss',
+            log_batch_frequency=10,
+        )
 
-        callbacks = [tb_callback, es_callback]  # wandb_callback, lr_callback
+        callbacks = [tb_callback, es_callback, wandb_callback]  # lr_callback
         return callbacks
 
     def _train(self):
@@ -128,10 +125,10 @@ class TrainingPipeline():
             use_multiprocessing=True,
             verbose=1,
         )
-        wandb.log(
-            dict(
-                val_loss=run.history['val_loss'][-1],
-                val_mae=run.history['val_mae'][-1],
-            ),
-        )
+        # wandb.log(
+        #     dict(
+        #         val_loss=run.history['val_loss'][-1],
+        #         val_mae=run.history['val_mae'][-1],
+        #     ),
+        # )
         return
