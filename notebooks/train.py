@@ -1,4 +1,4 @@
-from Enceladus.training_pipeline.Train import TrainingPipeline
+from Enceladus.jobs import TrainingPipeline
 from Enceladus.utils import GetConfiguration
 
 pipeline, model, sweep = GetConfiguration().run('config-sweep.ini')

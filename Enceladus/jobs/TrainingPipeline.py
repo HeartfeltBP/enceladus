@@ -3,7 +3,7 @@ import wandb
 import keras
 import tensorflow as tf
 from Enceladus.models import UNet
-from Enceladus.utils import RecordsHandler, set_all_seeds, get_strategy, lr_scheduler
+from Enceladus.utils import RecordsHandler, set_all_seeds, get_strategy
 
 
 class TrainingPipeline():
@@ -13,7 +13,9 @@ class TrainingPipeline():
         self.sweep_config = sweep_config
         self.no_sweep = no_sweep
         if no_sweep:
-            self.default_config = sweep_config
+            self.default_config = {}
+            for item, value in sweep_config['parameters'].items():
+                self.default_config[item] = value['values']
         else:
             self.default_config = dict(
             batch_size=32,
@@ -27,7 +29,7 @@ class TrainingPipeline():
 
     def run(self):
         set_all_seeds(self.config['seed'])
-        self.strategy = get_strategy()
+        self.strategy = get_strategy(self.config['hardware'])
 
         if not self.no_sweep:
             sweep_id = wandb.sweep(
@@ -49,8 +51,11 @@ class TrainingPipeline():
         handler = RecordsHandler(data_dir=self.config['records_dir'])
         dataset = handler.read_records(n_cores=self.config['n_cores'], AUTOTUNE=AUTOTUNE)
 
-        train = dataset['train'].prefetch(AUTOTUNE).shuffle(10*batch_size).batch(batch_size).repeat(epochs)
-        val = dataset['val'].prefetch(AUTOTUNE).shuffle(10*batch_size).batch(batch_size).repeat(epochs)
+        train = dataset['train'].prefetch(AUTOTUNE).shuffle(10*batch_size).batch(batch_size, num_parallel_calls=AUTOTUNE).repeat(epochs)
+        val = dataset['val'].prefetch(AUTOTUNE).shuffle(10*batch_size).batch(batch_size, num_parallel_calls=AUTOTUNE).repeat(epochs)
+        if self.config['hardware'] == 'Pegasus':
+            train = train.cache()
+            val = val.cache()
         return dict(train=train, val=val)
 
     def _get_callbacks(self):
@@ -112,12 +117,19 @@ class TrainingPipeline():
         dataset = self._load_dataset(wandb.config)
         callbacks = self._get_callbacks()
 
+        steps_per_epoch = int((self.config['data_size'] * self.config['data_split'][0]) / wandb.config.batch_size)
+        valid_steps = int((self.config['data_size'] * self.config['data_split'][1]) / wandb.config.batch_size)
+
         print('Fitting...')
         run = model.fit(
             dataset['train'],
             validation_data=dataset['val'],
             epochs=self.config['epochs'],
+            steps_per_epoch=steps_per_epoch,
+            validation_steps=valid_steps,
             callbacks=callbacks,
             use_multiprocessing=True,
         )
+        if self.no_sweep:
+            model.save('enceladus_model')
         return
