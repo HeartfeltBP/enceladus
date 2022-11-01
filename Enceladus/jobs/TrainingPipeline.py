@@ -69,8 +69,8 @@ class TrainingPipeline():
         # Learning rate decay
         lr_callback = keras.callbacks.ReduceLROnPlateau(
             monitor="val_loss",
-            factor=0.1,
-            patience=5,
+            factor=self.config['lr_decay_factor'],
+            patience=self.config['lr_patience'],
         )
 
         # Weights & Biases
