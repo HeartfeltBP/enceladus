@@ -5,7 +5,7 @@ description = "Model garden for blood pressure estimation."
 authors = ["Cameron Johnson"]
 license = "MIT"
 readme = "README.md"
-packages = [{include = "src"}]
+packages = [{include = "Enceladus"}]
 
 [tool.poetry.dependencies]
 python = ">=3.8,<3.9"
