@@ -5,7 +5,7 @@ from keras.initializers.initializers_v2 import GlorotUniform, HeUniform
 from keras.regularizers import L1, L2, L1L2
 
 
-class UNet():
+class MultiModalUNet():
     def __init__(self, config):
         self.config = config
         ini, act, reg = self.get_model_components(self.config)

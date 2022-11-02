@@ -62,7 +62,8 @@ class TrainingPipeline():
         es_callback = keras.callbacks.EarlyStopping(
             monitor='val_loss',
             patience=self.config['es_patience'],
-            restore_best_weights=True
+            restore_best_weights=True,
+            verbose=1,
         )
 
         # Learning rate decay
@@ -70,12 +71,15 @@ class TrainingPipeline():
             monitor="val_loss",
             factor=self.config['lr_decay_factor'],
             patience=self.config['lr_patience'],
+            min_delta=self.config['min_delta'],
+            mode='min',
+            verbose=1,
         )
 
         # Weights & Biases
         wandb_callback = wandb.keras.WandbCallback(
             monitor='val_loss',
-						mode='min',
+            mode='min',
         )
 
         callbacks = [es_callback, lr_callback, wandb_callback]
