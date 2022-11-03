@@ -12,7 +12,7 @@ class GetConfiguration():
         pipeline_literals = ['epochs', 'es_patience', 'seed', 'data_size', 'data_split', 'n_cores', 'lr_decay_factor', 'lr_patience', 'min_delta']
         pipeline = self.get_values(config['pipeline'], pipeline_literals)
 
-        model_literals = ['reg_factor_1', 'reg_factor_2']
+        model_literals = ['reg_factor_1', 'reg_factor_2', 'lstm']
         model = self.get_values(config['model'], model_literals)
 
         sweep_literals = ['batch_size', 'learning_rate', 'beta_1', 'beta_2', 'epsilon', 'dropout_1', 'dropout_2']

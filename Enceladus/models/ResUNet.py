@@ -1,11 +1,11 @@
 import tensorflow as tf
 from keras.models import Model
-from keras.layers import Input, Conv1D, BatchNormalization, Activation, MaxPooling1D, UpSampling1D, Concatenate, Dropout, LSTM, ConvLSTM1D
+from keras.layers import Input, Conv1D, BatchNormalization, Activation, MaxPooling1D, UpSampling1D, Concatenate, Dropout
 from keras.initializers.initializers_v2 import GlorotUniform, HeUniform
 from keras.regularizers import L1, L2, L1L2
 
 
-class MultiModalUNet():
+class ResUNet():
     def __init__(self, config):
         self.config = config
         ini, act, reg = self.get_model_components(self.config)
@@ -14,35 +14,26 @@ class MultiModalUNet():
         self.reg = reg
 
     def init(self):
-        ppg = Input(shape=(256, 1), name='ppg')
-        vpg = Input(shape=(256, 1), name='vpg')
+        input = Input(shape=(256, 1), name='ppg')
+        x1, skip1 = self.contraction_block(input, filters=64, pooling=True)
+        x2, skip2 = self.contraction_block(x1, filters=128, pooling=True)
+        x3, skip3 = self.contraction_block(x2, filters=256, pooling=True)
 
-        vpg_1, vpg_skip_1 = self.contraction_block(vpg, filters=64, pooling=True)
-        vpg_2, vpg_skip_2 = self.contraction_block(vpg_1, filters=128, pooling=True)
-        vpg_3, vpg_skip_3 = self.contraction_block(vpg_2, filters=256, pooling=True)
-        vpg_4 = self.contraction_block(vpg_3, filters=512, pooling=False)
-        vpg_4 = Dropout(self.config['dropout_1'])(vpg_4)
-        vpg_skip_4 = vpg_4
-        vpg_4 = MaxPooling1D(pool_size=(2))(vpg_4)
+        x4 = self.contraction_block(x3, filters=512, pooling=False)
+        x4 = Dropout(self.config['dropout_1'])(x4)
+        skip4 = x4
+        x4 = MaxPooling1D(pool_size=(2))(x4)
 
-        ppg_1, ppg_skip_1 = self.contraction_block(ppg, filters=64, pooling=True)
-        ppg_2, ppg_skip_2 = self.contraction_block(ppg_1, filters=128, pooling=True)
-        ppg_3, ppg_skip_3 = self.contraction_block(ppg_2, filters=256, pooling=True)
-        ppg_4 = self.contraction_block(ppg_3, filters=512, pooling=False)
-        ppg_4 = Dropout(self.config['dropout_1'])(ppg_4)
-        ppg_skip_4 = ppg_4
-        ppg_4 = MaxPooling1D(pool_size=(2))(ppg_4)
+        x5 = self.contraction_block(x4, filters=1024, pooling=False)
+        x5 = Dropout(self.config['dropout_2'])(x5)
+        x5 = UpSampling1D(size=2)(x5)
 
-        exp_1 = self.contraction_block(ppg_4, filters=1024, pooling=False)
-        exp_1 = Dropout(self.config['dropout_2'])(exp_1)
-        exp_1 = UpSampling1D(size=2)(exp_1)
-
-        exp_2 = self.expansion_block(exp_1, ppg_skip_4, vpg_skip_4, filters=512, sampling=True)
-        exp_3 = self.expansion_block(exp_2, ppg_skip_3, vpg_skip_3, filters=256, sampling=True)
-        exp_4 = self.expansion_block(exp_3, ppg_skip_2, vpg_skip_2, filters=128, sampling=True)
-        exp_5 = self.expansion_block(exp_4, ppg_skip_1, vpg_skip_1, filters=64, sampling=False)
-        abp = self.output_block(exp_5)
-        model = Model(inputs=[ppg, vpg], outputs=[abp], name='unet')
+        x6 = self.expansion_block(x5, skip4, filters=512, sampling=True)
+        x7 = self.expansion_block(x6, skip3, filters=256, sampling=True)
+        x8 = self.expansion_block(x7, skip2, filters=128, sampling=True)
+        x9 = self.expansion_block(x8, skip1, filters=64, sampling=False)
+        output = self.output_block(x9)
+        model = Model(inputs=[input], outputs=[output], name='unet')
         return model
 
     def get_model_components(self, config):
@@ -95,9 +86,9 @@ class MultiModalUNet():
         else:
             return x
 
-    def expansion_block(self, input, ppg_skip, abp_skip, filters, sampling):
+    def expansion_block(self, input, skip, filters, sampling):
         x = self.basic_block(input, filters, 2)
-        x = Concatenate()([x, ppg_skip, abp_skip])
+        x = Concatenate()([x, skip])
         x = self.basic_block(x, filters, 3)
         x = self.basic_block(x, filters, 3)
         x = UpSampling1D(size=2)(x) if sampling else x

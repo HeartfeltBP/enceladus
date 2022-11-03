@@ -40,6 +40,7 @@ class TrainingPipeline():
             wandb.agent(sweep_id, function=self._train)
         else:
             self._train()
+        wandb.finish()
         return
 
     def _load_dataset(self, wandb_config):
@@ -48,10 +49,12 @@ class TrainingPipeline():
 
         AUTOTUNE = tf.data.experimental.AUTOTUNE
 
-        if ('ppg' in self.config['inputs']) & ('vpg' in self.config['inputs']):
+        if self.config['inputs'] == 'ppg/vpg':
             handler = RecordsHandlerV2(data_dir=self.config['records_dir'])
-        else:
+        elif self.config['inputs'] == 'ppg':
             handler = RecordsHandler(data_dir=self.config['records_dir'])
+        else:
+            raise ValueError(f'Invalid input configuration')
         dataset = handler.read_records(n_cores=self.config['n_cores'], AUTOTUNE=AUTOTUNE)
 
         train = dataset['train'].prefetch(AUTOTUNE).shuffle(10*batch_size).batch(batch_size, num_parallel_calls=AUTOTUNE).repeat(epochs)
@@ -61,7 +64,7 @@ class TrainingPipeline():
             val = val.cache()
         return dict(train=train, val=val)
 
-    def _get_callbacks(self):
+    def _get_callbacks(self, dataset, valid_steps):
         # Early stopping
         es_callback = keras.callbacks.EarlyStopping(
             monitor='val_loss',
@@ -84,6 +87,10 @@ class TrainingPipeline():
         wandb_callback = wandb.keras.WandbCallback(
             monitor='val_loss',
             mode='min',
+            # training_data=dataset['train'],  annoying amount of overhead
+            # log_gradients=True,
+            validation_data=dataset['val'],
+            validation_steps=valid_steps,
         )
 
         callbacks = [es_callback, lr_callback, wandb_callback]
@@ -106,8 +113,12 @@ class TrainingPipeline():
         self.model_config['dropout_1'] = wandb.config.dropout_1
         self.model_config['dropout_2'] = wandb.config.dropout_2
         with self.strategy.scope():
-            # model = UNet(self.model_config).init()
-            model = MultiModalUNet(self.model_config).init()
+            if self.config['inputs'] == 'ppg/vpg':
+                model = MultiModalUNet(self.model_config).init()
+            elif self.config['inputs'] == 'ppg':
+                model = UNet(self.model_config).init()
+            else:
+                raise ValueError(f'Invalid input configuration')
 
             optimizer = self._optimizer(
                 name=self.config['optimizer'],
@@ -122,11 +133,12 @@ class TrainingPipeline():
                 loss='mse',
                 metrics=['mae'],
             )
-        dataset = self._load_dataset(wandb.config)
-        callbacks = self._get_callbacks()
 
         steps_per_epoch = int((self.config['data_size'] * self.config['data_split'][0]) / wandb.config.batch_size)
         valid_steps = int((self.config['data_size'] * self.config['data_split'][1]) / wandb.config.batch_size)
+
+        dataset = self._load_dataset(wandb.config)
+        callbacks = self._get_callbacks(dataset, valid_steps)
 
         print('Fitting...')
         run = model.fit(
