@@ -77,8 +77,10 @@ class ResUNet():
             return x
 
     def contraction_block(self, input, filters, pooling):
+        res_skip = input
         x = self.basic_block(input, filters, 3)
         x = self.basic_block(x, filters, 3)
+        x = Concatenate()([x, res_skip])
         if pooling:
             skip = x
             x = MaxPooling1D(pool_size=(2))(x)
@@ -89,8 +91,10 @@ class ResUNet():
     def expansion_block(self, input, skip, filters, sampling):
         x = self.basic_block(input, filters, 2)
         x = Concatenate()([x, skip])
+        res_skip = x
         x = self.basic_block(x, filters, 3)
         x = self.basic_block(x, filters, 3)
+        x = Concatenate()([x, res_skip])
         x = UpSampling1D(size=2)(x) if sampling else x
         return x
 
