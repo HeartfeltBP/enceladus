@@ -1,8 +1,9 @@
 import wandb
 import keras
 import tensorflow as tf
-from Enceladus.models import UNet
-from Enceladus.utils import RecordsHandler, set_all_seeds, get_strategy
+from Enceladus.models import UNet, MultiModalUNet
+from Enceladus.utils import set_all_seeds, get_strategy
+from database_tools.tools import RecordsHandler, RecordsHandlerV2
 
 
 class TrainingPipeline():
@@ -47,7 +48,10 @@ class TrainingPipeline():
 
         AUTOTUNE = tf.data.experimental.AUTOTUNE
 
-        handler = RecordsHandler(data_dir=self.config['records_dir'])
+        if ('ppg' in self.config['inputs']) & ('vpg' in self.config['inputs']):
+            handler = RecordsHandlerV2(data_dir=self.config['records_dir'])
+        else:
+            handler = RecordsHandler(data_dir=self.config['records_dir'])
         dataset = handler.read_records(n_cores=self.config['n_cores'], AUTOTUNE=AUTOTUNE)
 
         train = dataset['train'].prefetch(AUTOTUNE).shuffle(10*batch_size).batch(batch_size, num_parallel_calls=AUTOTUNE).repeat(epochs)
@@ -102,7 +106,8 @@ class TrainingPipeline():
         self.model_config['dropout_1'] = wandb.config.dropout_1
         self.model_config['dropout_2'] = wandb.config.dropout_2
         with self.strategy.scope():
-            model = UNet(self.model_config).init()
+            # model = UNet(self.model_config).init()
+            model = MultiModalUNet(self.model_config).init()
 
             optimizer = self._optimizer(
                 name=self.config['optimizer'],
