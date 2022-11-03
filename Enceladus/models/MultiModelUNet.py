@@ -74,20 +74,22 @@ class MultiModalUNet():
         return ini, act, reg
 
     def basic_block(self, input, filters, size):
-            x = Conv1D(
-                filters=filters,
-                kernel_size=(size),
-                kernel_initializer=self.ini,
-                kernel_regularizer=self.reg,
-                padding='same',
-            )(input)
-            x = BatchNormalization()(x) if self.config['batch_norm'] else x
-            x = Activation(self.act)(x)
-            return x
+        x = Conv1D(
+            filters=filters,
+            kernel_size=(size),
+            kernel_initializer=self.ini,
+            kernel_regularizer=self.reg,
+            padding='same',
+        )(input)
+        x = BatchNormalization()(x) if self.config['batch_norm'] else x
+        x = Activation(self.act)(x)
+        return x
 
     def contraction_block(self, input, filters, pooling):
+        res_skip = input
         x = self.basic_block(input, filters, 3)
         x = self.basic_block(x, filters, 3)
+        x = Concatenate()([x, res_skip])
         if pooling:
             skip = x
             x = MaxPooling1D(pool_size=(2))(x)
@@ -98,8 +100,10 @@ class MultiModalUNet():
     def expansion_block(self, input, ppg_skip, abp_skip, filters, sampling):
         x = self.basic_block(input, filters, 2)
         x = Concatenate()([x, ppg_skip, abp_skip])
+        res_skip = x
         x = self.basic_block(x, filters, 3)
         x = self.basic_block(x, filters, 3)
+        x = Concatenate()([x, res_skip])
         x = UpSampling1D(size=2)(x) if sampling else x
         return x
 

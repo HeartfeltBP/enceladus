@@ -1,8 +1,8 @@
 import wandb
 import keras
 import tensorflow as tf
-from Enceladus.models import UNet, MultiModalUNet
-from Enceladus.utils import set_all_seeds, get_strategy
+from Enceladus.models import UNet, MultiModalUNet, ResUNet
+from Enceladus.utils import set_all_seeds, get_strategy, lr_scheduler
 from database_tools.tools import RecordsHandler, RecordsHandlerV2
 
 
@@ -74,12 +74,16 @@ class TrainingPipeline():
         )
 
         # Learning rate decay
-        lr_callback = keras.callbacks.ReduceLROnPlateau(
-            monitor="val_loss",
-            factor=self.config['lr_decay_factor'],
-            patience=self.config['lr_patience'],
-            min_delta=self.config['min_delta'],
-            mode='min',
+        # lr_callback = keras.callbacks.ReduceLROnPlateau(
+        #     monitor="val_loss",
+        #     factor=self.config['lr_decay_factor'],
+        #     patience=self.config['lr_patience'],
+        #     min_delta=self.config['min_delta'],
+        #     mode='min',
+        #     verbose=1,
+        # )
+        lr_callback = keras.callbacks.LearningRateScheduler(
+            schedule=lr_scheduler,
             verbose=1,
         )
 
@@ -116,7 +120,8 @@ class TrainingPipeline():
             if self.config['inputs'] == 'ppg/vpg':
                 model = MultiModalUNet(self.model_config).init()
             elif self.config['inputs'] == 'ppg':
-                model = UNet(self.model_config).init()
+                # model = UNet(self.model_config).init()
+                model = ResUNet(self.model_config).init()
             else:
                 raise ValueError(f'Invalid input configuration')
 
