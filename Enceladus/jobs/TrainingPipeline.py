@@ -76,18 +76,18 @@ class TrainingPipeline():
         )
 
         # Learning rate decay
-        # lr_callback = keras.callbacks.ReduceLROnPlateau(
-        #     monitor="val_loss",
-        #     factor=self.config['lr_decay_factor'],
-        #     patience=self.config['lr_patience'],
-        #     min_delta=self.config['min_delta'],
-        #     mode='min',
-        #     verbose=1,
-        # )
-        lr_callback = keras.callbacks.LearningRateScheduler(
-            schedule=lr_scheduler,
+        lr_callback = keras.callbacks.ReduceLROnPlateau(
+            monitor="val_loss",
+            factor=self.config['lr_decay_factor'],
+            patience=self.config['lr_patience'],
+            min_delta=self.config['min_delta'],
+            mode='min',
             verbose=1,
         )
+        # lr_callback = keras.callbacks.LearningRateScheduler(
+        #     schedule=lr_scheduler,
+        #     verbose=1,
+        # )
 
         # Weights & Biases
         wandb_callback = wandb.keras.WandbCallback(
@@ -137,7 +137,7 @@ class TrainingPipeline():
 
             model.compile(
                 optimizer=optimizer,
-                loss='mse',
+                loss=self.config['loss'],
                 metrics=['mae'],
             )
 
