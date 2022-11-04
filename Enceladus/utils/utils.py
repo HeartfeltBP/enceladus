@@ -22,7 +22,7 @@ def get_strategy(hardware):
     return strategy
 
 def lr_scheduler(epoch, lr):
-    if epoch < 8:
+    if epoch < 7:
       return lr
     else:
-      return lr * tf.math.exp(-0.1)
+      return lr * tf.math.exp(-0.5)

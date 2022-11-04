@@ -57,11 +57,13 @@ class TrainingPipeline():
             raise ValueError(f'Invalid input configuration')
         dataset = handler.read_records(n_cores=self.config['n_cores'], AUTOTUNE=AUTOTUNE)
 
-        train = dataset['train'].prefetch(AUTOTUNE).shuffle(10*batch_size).batch(batch_size, num_parallel_calls=AUTOTUNE).repeat(epochs)
-        val = dataset['val'].prefetch(AUTOTUNE).shuffle(10*batch_size).batch(batch_size, num_parallel_calls=AUTOTUNE).repeat(epochs)
+        train = dataset['train'].prefetch(AUTOTUNE).shuffle(10*batch_size).batch(batch_size, num_parallel_calls=AUTOTUNE)
+        val = dataset['val'].prefetch(AUTOTUNE).shuffle(10*batch_size).batch(batch_size, num_parallel_calls=AUTOTUNE)
         if self.config['hardware'] == 'Pegasus':
             train = train.cache()
             val = val.cache()
+        train = train.repeat(epochs)
+        val = val.repeat(epochs)
         return dict(train=train, val=val)
 
     def _get_callbacks(self, dataset, valid_steps):
