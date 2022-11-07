@@ -71,6 +71,7 @@ class TrainingPipeline():
         es_callback = keras.callbacks.EarlyStopping(
             monitor='val_loss',
             patience=self.config['es_patience'],
+            min_delta=self.config['es_min_delta'],
             restore_best_weights=True,
             verbose=1,
         )
@@ -80,7 +81,7 @@ class TrainingPipeline():
             monitor="val_loss",
             factor=self.config['lr_decay_factor'],
             patience=self.config['lr_patience'],
-            min_delta=self.config['min_delta'],
+            min_delta=self.config['lr_min_delta'],
             mode='min',
             verbose=1,
         )
