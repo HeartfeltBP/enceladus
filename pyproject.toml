@@ -5,7 +5,7 @@ description = "Model garden for blood pressure estimation."
 authors = ["Cameron Johnson"]
 license = "MIT"
 readme = "README.md"
-packages = [{include = "src"}]
+packages = [{include = "Enceladus"}]
 
 [tool.poetry.dependencies]
 python = ">=3.8,<3.9"
@@ -27,6 +27,9 @@ widgetsnbextension = "==3.6.1"
 wandb = "^0.13.4"
 tensorflow = "==2.9.2"
 keras = ">=2.9.0rc0,<2.10.0"
+pydot = "^1.4.2"
+graphviz = "^0.20.1"
+database-tools = {git = "https://github.com/HeartfeltBP/database_tools.git"}
 
 [build-system]
 requires = ["poetry-core"]
