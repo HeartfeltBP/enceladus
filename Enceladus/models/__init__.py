@@ -1,3 +1,3 @@
 from .UNet import UNet
-from .MultiModelUNet import MultiModalUNet
+from .MultiModalUNet import MultiModalUNet
 from .ResUNet import ResUNet

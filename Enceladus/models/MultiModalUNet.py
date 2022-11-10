@@ -20,28 +20,33 @@ class MultiModalUNet():
         vpg_1, vpg_skip_1 = self.contraction_block(vpg, filters=64, pooling=True)
         vpg_2, vpg_skip_2 = self.contraction_block(vpg_1, filters=128, pooling=True)
         vpg_3, vpg_skip_3 = self.contraction_block(vpg_2, filters=256, pooling=True)
-        vpg_4 = self.contraction_block(vpg_3, filters=512, pooling=False)
-        vpg_4 = Dropout(self.config['dropout_1'])(vpg_4)
-        vpg_skip_4 = vpg_4
-        vpg_4 = MaxPooling1D(pool_size=(2))(vpg_4)
+        vpg_4, vpg_skip_4 = self.contraction_block(vpg_3, filters=512, pooling=True)
+        vpg_5 = self.contraction_block(vpg_4, filters=1024, pooling=False)
+        vpg_5 = Dropout(self.config['dropout_1'])(vpg_5)
+        vpg_skip_5 = vpg_5
+        vpg_5 = MaxPooling1D(pool_size=(2))(vpg_5)
 
         ppg_1, ppg_skip_1 = self.contraction_block(ppg, filters=64, pooling=True)
         ppg_2, ppg_skip_2 = self.contraction_block(ppg_1, filters=128, pooling=True)
         ppg_3, ppg_skip_3 = self.contraction_block(ppg_2, filters=256, pooling=True)
-        ppg_4 = self.contraction_block(ppg_3, filters=512, pooling=False)
-        ppg_4 = Dropout(self.config['dropout_1'])(ppg_4)
-        ppg_skip_4 = ppg_4
-        ppg_4 = MaxPooling1D(pool_size=(2))(ppg_4)
+        ppg_4, ppg_skip_4 = self.contraction_block(ppg_3, filters=512, pooling=True)
+        ppg_5 = self.contraction_block(ppg_4, filters=1024, pooling=False)
+        ppg_5 = Dropout(self.config['dropout_1'])(ppg_5)
+        ppg_skip_5 = ppg_5
+        ppg_5 = MaxPooling1D(pool_size=(2))(ppg_5)
 
-        exp_1 = self.contraction_block(ppg_4, filters=1024, pooling=False)
+        exp_0 = Concatenate()([ppg_5, vpg_5])
+
+        exp_1 = self.contraction_block(exp_0, filters=2048, pooling=False)
         exp_1 = Dropout(self.config['dropout_2'])(exp_1)
         exp_1 = UpSampling1D(size=2)(exp_1)
 
-        exp_2 = self.expansion_block(exp_1, ppg_skip_4, vpg_skip_4, filters=512, sampling=True)
-        exp_3 = self.expansion_block(exp_2, ppg_skip_3, vpg_skip_3, filters=256, sampling=True)
-        exp_4 = self.expansion_block(exp_3, ppg_skip_2, vpg_skip_2, filters=128, sampling=True)
-        exp_5 = self.expansion_block(exp_4, ppg_skip_1, vpg_skip_1, filters=64, sampling=False)
-        abp = self.output_block(exp_5)
+        exp_2 = self.expansion_block(exp_1, ppg_skip_5, vpg_skip_5, filters=1024, sampling=True)
+        exp_3 = self.expansion_block(exp_2, ppg_skip_4, vpg_skip_4, filters=512, sampling=True)
+        exp_4 = self.expansion_block(exp_3, ppg_skip_3, vpg_skip_3, filters=256, sampling=True)
+        exp_5 = self.expansion_block(exp_4, ppg_skip_2, vpg_skip_2, filters=128, sampling=True)
+        exp_6 = self.expansion_block(exp_5, ppg_skip_1, vpg_skip_1, filters=64, sampling=False)
+        abp = self.output_block(exp_6)
         model = Model(inputs=[ppg, vpg], outputs=[abp], name='unet')
         return model
 
