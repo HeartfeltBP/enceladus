@@ -18,21 +18,22 @@ class ResUNet():
         x1, skip1 = self.contraction_block(input, filters=64, pooling=True)
         x2, skip2 = self.contraction_block(x1, filters=128, pooling=True)
         x3, skip3 = self.contraction_block(x2, filters=256, pooling=True)
-
-        x4 = self.contraction_block(x3, filters=512, pooling=False)
-        x4 = Dropout(self.config['dropout_1'])(x4)
-        skip4 = x4
-        x4 = MaxPooling1D(pool_size=(2))(x4)
-
+        x4, skip4 = self.contraction_block(x3, filters=512, pooling=True)
         x5 = self.contraction_block(x4, filters=1024, pooling=False)
-        x5 = Dropout(self.config['dropout_2'])(x5)
-        x5 = UpSampling1D(size=2)(x5)
+        x5 = Dropout(self.config['dropout_1'])(x5)
+        skip5 = x5
+        x5 = MaxPooling1D(pool_size=(2))(x5)
 
-        x6 = self.expansion_block(x5, skip4, filters=512, sampling=True)
-        x7 = self.expansion_block(x6, skip3, filters=256, sampling=True)
-        x8 = self.expansion_block(x7, skip2, filters=128, sampling=True)
-        x9 = self.expansion_block(x8, skip1, filters=64, sampling=False)
-        output = self.output_block(x9)
+        x6 = self.contraction_block(x5, filters=2048, pooling=False)
+        x6 = Dropout(self.config['dropout_2'])(x6)
+        x6 = UpSampling1D(size=2)(x6)
+
+        x7 = self.expansion_block(x6, skip5, filters=1024, sampling=True)
+        x8 = self.expansion_block(x7, skip4, filters=512, sampling=True)
+        x9 = self.expansion_block(x8, skip3, filters=256, sampling=True)
+        x10 = self.expansion_block(x9, skip2, filters=128, sampling=True)
+        x11 = self.expansion_block(x10, skip1, filters=64, sampling=False)
+        output = self.output_block(x11)
         model = Model(inputs=[input], outputs=[output], name='unet')
         return model
 

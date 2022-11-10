@@ -1,7 +1,7 @@
 import wandb
 import keras
 import tensorflow as tf
-from Enceladus.models import UNet, MultiModalUNet, ResUNet
+from Enceladus.models import UNet2D, UNet3D, ResUNet
 from Enceladus.utils import set_all_seeds, get_strategy, lr_scheduler
 from database_tools.tools import RecordsHandler, RecordsHandlerV2
 
@@ -55,7 +55,7 @@ class TrainingPipeline():
             handler = RecordsHandler(data_dir=self.config['records_dir'])
         else:
             raise ValueError(f'Invalid input configuration')
-        dataset = handler.read_records(n_cores=self.config['n_cores'], AUTOTUNE=AUTOTUNE)
+        dataset = handler.read_records(['train', 'val'], n_cores=self.config['n_cores'], AUTOTUNE=AUTOTUNE)
 
         train = dataset['train'].prefetch(AUTOTUNE).shuffle(10*batch_size).batch(batch_size, num_parallel_calls=AUTOTUNE)
         val = dataset['val'].prefetch(AUTOTUNE).shuffle(10*batch_size).batch(batch_size, num_parallel_calls=AUTOTUNE)
@@ -85,17 +85,11 @@ class TrainingPipeline():
             mode='min',
             verbose=1,
         )
-        # lr_callback = keras.callbacks.LearningRateScheduler(
-        #     schedule=lr_scheduler,
-        #     verbose=1,
-        # )
 
         # Weights & Biases
         wandb_callback = wandb.keras.WandbCallback(
             monitor='val_loss',
             mode='min',
-            # training_data=dataset['train'],  annoying amount of overhead
-            # log_gradients=True,
             validation_data=dataset['val'],
             validation_steps=valid_steps,
         )
@@ -120,10 +114,11 @@ class TrainingPipeline():
         self.model_config['dropout_1'] = wandb.config.dropout_1
         self.model_config['dropout_2'] = wandb.config.dropout_2
         with self.strategy.scope():
-            if self.config['inputs'] == 'ppg/vpg':
-                model = MultiModalUNet(self.model_config).init()
+            if self.config['inputs'] == 'ppg/vpg/apg':
+                model = UNet3D(self.model_config).init()
+            elif self.config['inputs'] == 'ppg/vpg':
+                model = UNet2D(self.model_config).init()
             elif self.config['inputs'] == 'ppg':
-                # model = UNet(self.model_config).init()
                 model = ResUNet(self.model_config).init()
             else:
                 raise ValueError(f'Invalid input configuration')
