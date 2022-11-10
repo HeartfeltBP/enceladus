@@ -255,9 +255,9 @@ widgetsnbextension = "==3.6.1"
 
 [package.source]
 type = "git"
-url = "https://github.com/HeartfeltBP/database_tools.git"
+url = "git@github.com:HeartfeltBP/database_tools.git"
 reference = "HEAD"
-resolved_reference = "1b3f923ceb3827c05dd4e147e03e67c8ab6877a7"
+resolved_reference = "2ec48657f53a972104a477223d96e1a08f4c7d8c"
 
 [[package]]
 name = "debugpy"
@@ -2065,7 +2065,7 @@ testing = ["flake8 (<5)", "func-timeout", "jaraco.functools", "jaraco.itertools"
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.8,<3.9"
-content-hash = "830f47bcf653c61d262c0642e762c48b9a428a08579e258821ea1aeddf16699f"
+content-hash = "29d9329f22784b8b2c974742c0184d6a87f5c1eb048f84d39cf352767590978b"
 
 [metadata.files]
 absl-py = [

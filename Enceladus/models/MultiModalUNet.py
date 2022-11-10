@@ -178,11 +178,11 @@ class UNet3D():
         exp_1 = Dropout(self.config['dropout_2'])(exp_1)
         exp_1 = UpSampling1D(size=2)(exp_1)
 
-        exp_2 = self.expansion_block(exp_1, ppg_skip_5, vpg_skip_5, apg_skip_1, filters=1024, sampling=True)
-        exp_3 = self.expansion_block(exp_2, ppg_skip_4, vpg_skip_4, apg_skip_2, filters=512, sampling=True)
+        exp_2 = self.expansion_block(exp_1, ppg_skip_5, vpg_skip_5, apg_skip_5, filters=1024, sampling=True)
+        exp_3 = self.expansion_block(exp_2, ppg_skip_4, vpg_skip_4, apg_skip_4, filters=512, sampling=True)
         exp_4 = self.expansion_block(exp_3, ppg_skip_3, vpg_skip_3, apg_skip_3, filters=256, sampling=True)
-        exp_5 = self.expansion_block(exp_4, ppg_skip_2, vpg_skip_2, apg_skip_4, filters=128, sampling=True)
-        exp_6 = self.expansion_block(exp_5, ppg_skip_1, vpg_skip_1, apg_skip_5, filters=64, sampling=False)
+        exp_5 = self.expansion_block(exp_4, ppg_skip_2, vpg_skip_2, apg_skip_2, filters=128, sampling=True)
+        exp_6 = self.expansion_block(exp_5, ppg_skip_1, vpg_skip_1, apg_skip_1, filters=64, sampling=False)
         abp = self.output_block(exp_6)
         model = Model(inputs=[ppg, vpg, apg], outputs=[abp], name='unet')
         return model

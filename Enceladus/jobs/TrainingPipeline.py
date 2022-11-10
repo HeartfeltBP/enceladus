@@ -49,13 +49,15 @@ class TrainingPipeline():
 
         AUTOTUNE = tf.data.experimental.AUTOTUNE
 
-        if self.config['inputs'] == 'ppg/vpg':
-            handler = RecordsHandlerV2(data_dir=self.config['records_dir'])
+        handler = RecordsHandler(data_dir=self.config['records_dir'])
+        if self.config['inputs'] == 'ppg/vpg/apg':
+            dataset = handler.read_records(['train', 'val'], ['ppg', 'vpg', 'apg', 'abp'], n_cores=self.config['n_cores'], AUTOTUNE=AUTOTUNE)
+        elif self.config['inputs'] == 'ppg/vpg':
+            dataset = handler.read_records(['train', 'val'], ['ppg', 'vpg', 'abp'], n_cores=self.config['n_cores'], AUTOTUNE=AUTOTUNE)
         elif self.config['inputs'] == 'ppg':
-            handler = RecordsHandler(data_dir=self.config['records_dir'])
+            dataset = handler.read_records(['train', 'val'], ['ppg', 'abp'], n_cores=self.config['n_cores'], AUTOTUNE=AUTOTUNE)
         else:
             raise ValueError(f'Invalid input configuration')
-        dataset = handler.read_records(['train', 'val'], n_cores=self.config['n_cores'], AUTOTUNE=AUTOTUNE)
 
         train = dataset['train'].prefetch(AUTOTUNE).shuffle(10*batch_size).batch(batch_size, num_parallel_calls=AUTOTUNE)
         val = dataset['val'].prefetch(AUTOTUNE).shuffle(10*batch_size).batch(batch_size, num_parallel_calls=AUTOTUNE)
