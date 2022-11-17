@@ -9,13 +9,32 @@ class GetConfiguration():
         config.read(path)
         config.sections()
 
-        pipeline_literals = ['epochs', 'es_patience', 'seed', 'data_size', 'data_split', 'n_cores', 'lr_decay_factor', 'lr_patience', 'lr_min_delta', 'es_min_delta']
+        pipeline_literals = [
+            'epochs',
+            'es_patience',
+            'es_min_delta',
+            'lr_decay_factor',
+            'lr_patience',
+            'lr_min_delta',
+            'n_cores',
+            'seed',
+            'data_size',
+            'data_split',
+            'save_model',
+        ]
         pipeline = self.get_values(config['pipeline'], pipeline_literals)
 
-        model_literals = ['reg_factor_1', 'reg_factor_2', 'lstm']
+        model_literals = []
         model = self.get_values(config['model'], model_literals)
 
-        sweep_literals = ['batch_size', 'learning_rate', 'beta_1', 'beta_2', 'epsilon', 'dropout_1', 'dropout_2']
+        sweep_literals = [
+            'batch_size',
+            'learning_rate',
+            'beta_1',
+            'beta_2',
+            'epsilon',
+            'dropout'
+        ]
         sweep = self.get_sweep_values(config['sweep'], sweep_literals, pipeline)
         return pipeline, model, sweep
 

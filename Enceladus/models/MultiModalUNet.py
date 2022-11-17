@@ -1,6 +1,6 @@
 import tensorflow as tf
 from keras.models import Model
-from keras.layers import Input, Conv1D, BatchNormalization, Activation, MaxPooling1D, UpSampling1D, Concatenate, Dropout, LSTM, ConvLSTM1D
+from keras.layers import Input, Conv1D, BatchNormalization, Activation, MaxPooling1D, UpSampling1D, Concatenate, Dropout, Add
 from keras.initializers.initializers_v2 import GlorotUniform, HeUniform
 from keras.regularizers import L1, L2, L1L2
 
@@ -91,10 +91,10 @@ class UNet2D():
         return x
 
     def contraction_block(self, input, filters, pooling):
-        res_skip = input
         x = self.basic_block(input, filters, 3)
+        res_skip = x
         x = self.basic_block(x, filters, 3)
-        x = Concatenate()([x, res_skip])
+        x = Add()([x, res_skip])
         if pooling:
             skip = x
             x = MaxPooling1D(pool_size=(2))(x)
@@ -105,10 +105,10 @@ class UNet2D():
     def expansion_block(self, input, ppg_skip, abp_skip, filters, sampling):
         x = self.basic_block(input, filters, 2)
         x = Concatenate()([x, ppg_skip, abp_skip])
+        x = self.basic_block(x, filters, 3)
         res_skip = x
         x = self.basic_block(x, filters, 3)
-        x = self.basic_block(x, filters, 3)
-        x = Concatenate()([x, res_skip])
+        x = Add()([x, res_skip])
         x = UpSampling1D(size=2)(x) if sampling else x
         return x
 
@@ -228,10 +228,10 @@ class UNet3D():
         return x
 
     def contraction_block(self, input, filters, pooling):
-        res_skip = input
         x = self.basic_block(input, filters, 3)
+        res_skip = x
         x = self.basic_block(x, filters, 3)
-        x = Concatenate()([x, res_skip])
+        x = Add()([x, res_skip])
         if pooling:
             skip = x
             x = MaxPooling1D(pool_size=(2))(x)
@@ -242,10 +242,10 @@ class UNet3D():
     def expansion_block(self, input, ppg_skip, vpg_skip, apg_skip, filters, sampling):
         x = self.basic_block(input, filters, 2)
         x = Concatenate()([x, ppg_skip, vpg_skip, apg_skip])
+        x = self.basic_block(x, filters, 3)
         res_skip = x
         x = self.basic_block(x, filters, 3)
-        x = self.basic_block(x, filters, 3)
-        x = Concatenate()([x, res_skip])
+        x = Add()([x, res_skip])
         x = UpSampling1D(size=2)(x) if sampling else x
         return x
 

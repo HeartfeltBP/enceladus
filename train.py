@@ -7,5 +7,6 @@ worker = TrainingPipeline(
     model_config=model,
     sweep_config=sweep,
     no_sweep=True,
+    saved_model=None,
 )
 worker.run()

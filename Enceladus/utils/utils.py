@@ -20,9 +20,3 @@ def get_strategy(hardware):
     else:
         raise ValueError(f'Invalid hardware option {hardware}')
     return strategy
-
-def lr_scheduler(epoch, lr):
-    if epoch < 7:
-      return lr
-    else:
-      return lr * tf.math.exp(-0.5)

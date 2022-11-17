@@ -1,17 +1,18 @@
 import wandb
 import keras
 import tensorflow as tf
-from Enceladus.models import UNet2D, UNet3D, ResUNet
-from Enceladus.utils import set_all_seeds, get_strategy, lr_scheduler
-from database_tools.tools import RecordsHandler, RecordsHandlerV2
+from Enceladus.models import UNet3D_v2
+from Enceladus.utils import set_all_seeds, get_strategy
+from database_tools.tools import RecordsHandler
 
 
 class TrainingPipeline():
-    def __init__(self, config, model_config, sweep_config, no_sweep=False):
+    def __init__(self, config, model_config, sweep_config, no_sweep=False, saved_model=None):
         self.config = config
         self.model_config = model_config
         self.sweep_config = sweep_config
         self.no_sweep = no_sweep
+        self.saved_model = saved_model
         if no_sweep:
             self.default_config = {}
             for item, value in sweep_config['parameters'].items():
@@ -61,7 +62,7 @@ class TrainingPipeline():
 
         train = dataset['train'].prefetch(AUTOTUNE).shuffle(10*batch_size).batch(batch_size, num_parallel_calls=AUTOTUNE)
         val = dataset['val'].prefetch(AUTOTUNE).shuffle(10*batch_size).batch(batch_size, num_parallel_calls=AUTOTUNE)
-        if self.config['hardware'] == 'Pegasus':
+        if self.config['hardware'] in ['Pegasus']:
             train = train.cache()
             val = val.cache()
         train = train.repeat(epochs)
@@ -87,6 +88,10 @@ class TrainingPipeline():
             mode='min',
             verbose=1,
         )
+        # lr_callback = keras.callbacks.LearningRateScheduler(
+        #     schedule=lr_scheduler,
+        #     verbose=1,
+        # )
 
         # Weights & Biases
         wandb_callback = wandb.keras.WandbCallback(
@@ -94,9 +99,10 @@ class TrainingPipeline():
             mode='min',
             validation_data=dataset['val'],
             validation_steps=valid_steps,
+            save_model=self.config['save_model'],
         )
 
-        callbacks = [es_callback, lr_callback, wandb_callback]
+        callbacks = [lr_callback, wandb_callback]
         return callbacks
 
     def _optimizer(self, name, learning_rate, beta_1, beta_2, epsilon):
@@ -104,26 +110,29 @@ class TrainingPipeline():
             opt = tf.keras.optimizers.Adam
         elif name == 'Nadam':
             opt = tf.keras.optimizers.Nadam
+        elif name == 'Adamax':
+            opt = tf.keras.optimizers.Adamax
         return opt(
             learning_rate=learning_rate,
             beta_1=beta_1,
             beta_2=beta_2,
             epsilon=epsilon,
+            decay=0.00001, # BEST RUN 0.00001
         )
 
     def _train(self):
-        wandb.init(config=self.default_config)
-        self.model_config['dropout_1'] = wandb.config.dropout_1
-        self.model_config['dropout_2'] = wandb.config.dropout_2
+        run = wandb.init(config=self.default_config)
+        self.model_config['dropout'] = wandb.config.dropout
         with self.strategy.scope():
-            if self.config['inputs'] == 'ppg/vpg/apg':
-                model = UNet3D(self.model_config).init()
-            elif self.config['inputs'] == 'ppg/vpg':
-                model = UNet2D(self.model_config).init()
-            elif self.config['inputs'] == 'ppg':
-                model = ResUNet(self.model_config).init()
+            if self.saved_model is not None:
+                artifact = run.use_artifact(self.saved_model, type='model')
+                artifact_dir = artifact.download()
+                model = keras.models.load_model(artifact_dir, compile=False)
             else:
-                raise ValueError(f'Invalid input configuration')
+                if self.config['inputs'] == 'ppg/vpg/apg':
+                    model = UNet3D_v2(self.model_config).init()
+                else:
+                    raise ValueError(f'Invalid input configuration')
 
             optimizer = self._optimizer(
                 name=self.config['optimizer'],

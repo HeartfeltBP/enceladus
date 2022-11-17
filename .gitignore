@@ -133,5 +133,6 @@ output/
 data*/
 output*/
 wandb/
+enceladus_model/
 */enceladus_model/
-*/olive_terrain-15
+artifacts/
