@@ -1,7 +1,7 @@
 import wandb
 import keras
 import tensorflow as tf
-from Enceladus.models import UNet3D_v2
+from Enceladus.models import UNet
 from Enceladus.utils import set_all_seeds, get_strategy
 from database_tools.tools import RecordsHandler
 
@@ -81,17 +81,13 @@ class TrainingPipeline():
 
         # Learning rate decay
         lr_callback = keras.callbacks.ReduceLROnPlateau(
-            monitor="val_loss",
+            monitor='val_loss',
             factor=self.config['lr_decay_factor'],
             patience=self.config['lr_patience'],
             min_delta=self.config['lr_min_delta'],
             mode='min',
             verbose=1,
         )
-        # lr_callback = keras.callbacks.LearningRateScheduler(
-        #     schedule=lr_scheduler,
-        #     verbose=1,
-        # )
 
         # Weights & Biases
         wandb_callback = wandb.keras.WandbCallback(
@@ -117,7 +113,7 @@ class TrainingPipeline():
             beta_1=beta_1,
             beta_2=beta_2,
             epsilon=epsilon,
-            decay=0.00001, # BEST RUN 0.00001
+            decay=0.00001,
         )
 
     def _train(self):
@@ -130,7 +126,7 @@ class TrainingPipeline():
                 model = keras.models.load_model(artifact_dir, compile=False)
             else:
                 if self.config['inputs'] == 'ppg/vpg/apg':
-                    model = UNet3D_v2(self.model_config).init()
+                    model = UNet(self.model_config).init()
                 else:
                     raise ValueError(f'Invalid input configuration')
 
