@@ -4,47 +4,55 @@ import numpy as np
 import pandas as pd
 import pickle as pkl
 from tqdm import tqdm
-import tensorflow as tf
+from typing import Tuple
 from heartpy.preprocessing import flip_signal
 from heartpy.peakdetection import detect_peaks
 from heartpy.datautils import rolling_mean
-from database_tools.tools import RecordsHandler
+from database_tools.tools.records import read_records, rescale_data
 
 
 class TestingPipeline():
     def __init__(
         self,
-        data_path,
-        scaler_path,
-        scaler_type,
-        model_path,
+        data_dir: str,
+        model_dir: str,
+        scaler: str,
     ):
-        self._data_path = data_path
-        self._scaler_path = scaler_path
-        self._scaler_type = scaler_type
-        self._model_path = model_path
+        self.data_dir = data_dir
+        self.model_dir = model_dir
+        self.model = self._load_model(model_dir)
+        with open(data_dir + scaler, 'rb') as f:
+            self.scaler = pkl.load(f)
+
+    def _load_model(self, path):
+        run = wandb.init()
+        artifact = run.use_artifact(path, type='model')
+        artifact_dir = artifact.download()
+        wandb.finish()
+        model = keras.models.load_model(artifact_dir)
+        return model
 
     def run(self):
         print('Loading data...')
-        handler = RecordsHandler(data_dir=self._data_path)
-        test = handler.read_records(['test'], ['ppg', 'vpg', 'apg', 'abp'], n_cores=10, AUTOTUNE=tf.data.AUTOTUNE)['test']
-        ppg, vpg, apg, abp = self._load_data(test)
+        data = read_records(data_dir=self.data_dir)
+        ppg, vpg, apg, abp = self._load_data(data['test'])
         # return (ppg, vpg, apg, abp)
 
-        model = self._load_model(self._model_path)
-
         print('Generating predictions...')
-        pred = model.predict([ppg, vpg, apg]).reshape(-1, 256)
+        pred = self.model.predict([ppg, vpg, apg]).reshape(-1, 256)
+        # return pred
 
         print('Rescaling data...')
-        scaled = self._scale_data(self._scaler_path, self._scaler_type, ppg, vpg, apg, abp, pred)
-
-        abp_scaled = scaled['abp']
-        pred_scaled = scaled['pred']
+        ppg_scaled = rescale_data(ppg, self.scaler['ppg'])
+        vpg_scaled = rescale_data(vpg, self.scaler['vpg'])
+        apg_scaled = rescale_data(apg, self.scaler['apg'])
+        abp_scaled = rescale_data(abp, self.scaler['abp'])
+        pred_scaled = rescale_data(pred, self.scaler['abp'])
+        # return (ppg_scaled, vpg_scaled, apg_scaled, abp_scaled, pred_scaled)
 
         print('Calculating error...')
-        self._calculate_error(abp_scaled, pred_scaled)
-        return
+        df = self._calculate_error(abp_scaled, pred_scaled)
+        return df
 
     def _load_data(self, data):
         ppg, vpg, apg, abp = [], [], [], []
@@ -58,37 +66,6 @@ class TestingPipeline():
         apg = np.array(apg).reshape(-1, 256)
         abp = np.array(abp).reshape(-1, 256)
         return ppg, vpg, apg, abp
-
-    def _load_model(self, path):
-        run = wandb.init()
-        artifact = run.use_artifact(path, type='model')
-        artifact_dir = artifact.download()
-        wandb.finish()
-        model = keras.models.load_model(artifact_dir)
-        return model
-
-    def _scale_data(self, path, scaler_type, ppg, vpg, apg, abp, pred):
-        with open(path, 'rb') as f:
-            scalers = pkl.load(f)
-
-        ppg_scaler = scalers['ppg']
-        vpg_scaler = scalers['vpg']
-        apg_scaler = scalers['apg']
-        abp_scaler = scalers['abp']
-
-        if scaler_type == 'MinMax':
-            ppg = np.multiply(ppg, ppg_scaler[1] - ppg_scaler[0]) + ppg_scaler[0]
-            vpg = np.multiply(vpg, vpg_scaler[1] - vpg_scaler[0]) + vpg_scaler[0]
-            apg = np.multiply(apg, apg_scaler[1] - apg_scaler[0]) + apg_scaler[0]
-            abp = np.multiply(abp, abp_scaler[1] - abp_scaler[0]) + abp_scaler[0]
-            pred = np.multiply(pred, abp_scaler[1] - abp_scaler[0]) + abp_scaler[0]
-        elif scaler_type == 'Standard':
-            pass
-        scaled_data = dict(ppg=ppg, vpg=vpg, apg=apg, abp=abp, pred=pred)
-        model_name = self._model_path.split('/')[-1]
-        with open(f'{model_name}_predictions.pkl', 'wb') as f:
-            pkl.dump(scaled_data, f)
-        return scaled_data
 
     def _calculate_error(self, abp, pred):
         fs=125
@@ -125,14 +102,10 @@ class TestingPipeline():
         df['sbp_abs_err'] = np.abs(df['sbp_err'])
         df['dbp_abs_err'] = np.abs(df['dbp_err'])
 
-        model_name = self._model_path.split('/')[-1]
-        with open(f'{model_name}_error.pkl', 'wb') as f:
-            pkl.dump(df, f)
-
         for err, label in zip([df['sbp_abs_err'], df['dbp_abs_err']], ['Systolic BP', 'Diastolic BP']):
             print(label)
             print(f'{len(err[err < 15]) / len(err) * 100:.{3}}% < 15mmHg')
             print(f'{len(err[err < 10]) / len(err) * 100:.{3}}% < 10mmHg')
             print(f'{len(err[err < 5]) / len(err) * 100:.{3}}% < 5mmHg')
             print()
-        return
+        return df
