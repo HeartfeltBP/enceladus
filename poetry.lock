@@ -292,42 +292,6 @@ optional = false
 python-versions = ">=3.6"
 
 [[package]]
-name = "database-tools"
-version = "0.1.0"
-description = "For compiling MIMIC-III waveform data into an ML ready database."
-category = "main"
-optional = false
-python-versions = "^3.9,<3.10"
-develop = false
-
-[package.dependencies]
-heartpy = "^1.2.7"
-ipywidgets = "==7.7.1"
-jupyter = "^1.0.0"
-jupyterlab-widgets = "==1.1.1"
-keras = ">=2.9.0rc0,<2.10.0"
-neurokit2 = "^0.2.1"
-numpy = "^1.23.4"
-openpyxl = "^3.0.10"
-pandas = "^1.5.1"
-plotly = "^5.10.0"
-scikit-learn = "^1.1.2"
-scipy = "^1.9.3"
-tabulate = "^0.9.0"
-tensorflow = "==2.9.2"
-tqdm = "^4.64.1"
-vitaldb = "^1.2.10"
-wandb = "^0.13.4"
-wfdb = "^4.0.0"
-widgetsnbextension = "==3.6.1"
-
-[package.source]
-type = "git"
-url = "git@github.com:HeartfeltBP/database_tools.git"
-reference = "dev-records"
-resolved_reference = "15218862a8563b3909f3933977690553cdfb9860"
-
-[[package]]
 name = "debugpy"
 version = "1.6.6"
 description = "An implementation of the Debug Adapter Protocol for Python"
@@ -796,6 +760,29 @@ python-versions = ">=3.7"
 
 [package.dependencies]
 numpy = ">=1.14.5"
+
+[[package]]
+name = "heartfelt-tools"
+version = "1.0.4"
+description = "Extract and process photoplethysmography and arterial blood pressure data from mimic3-waveforms and vitaldb."
+category = "main"
+optional = false
+python-versions = ">=3.9,<3.10"
+
+[package.dependencies]
+heartpy = ">=1.2.7,<2.0.0"
+neurokit2 = ">=0.2.1,<0.3.0"
+numpy = ">=1.23.4,<2.0.0"
+openpyxl = ">=3.0.10,<4.0.0"
+pandas = ">=1.5.1,<2.0.0"
+plotly = ">=5.10.0,<6.0.0"
+scikit-learn = ">=1.1.2,<2.0.0"
+scipy = ">=1.9.3,<2.0.0"
+tabulate = ">=0.9.0,<0.10.0"
+tensorflow = "2.9.2"
+tqdm = ">=4.64.1,<5.0.0"
+vitaldb = ">=1.2.10,<2.0.0"
+wfdb = ">=4.0.0,<5.0.0"
 
 [[package]]
 name = "heartpy"
@@ -2558,7 +2545,7 @@ testing = ["flake8 (<5)", "func-timeout", "jaraco.functools", "jaraco.itertools"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9,<3.10"
-content-hash = "8e5f9249b0f6168fed9585510c47d45ba8bbea8305040b9014d0a2f37c209827"
+content-hash = "dcbee4d6b569d120021df57d194042bb273fdda9dfd9cc62f67b982f5465636f"
 
 [metadata.files]
 absl-py = [
@@ -2898,7 +2885,6 @@ cycler = [
     {file = "cycler-0.11.0-py3-none-any.whl", hash = "sha256:3a27e95f763a428a739d2add979fa7494c912a32c17c4c38c4d5f082cad165a3"},
     {file = "cycler-0.11.0.tar.gz", hash = "sha256:9c87405839a19696e837b3b818fed3f5f69f16f1eec1a1ad77e043dcea9c772f"},
 ]
-database-tools = []
 debugpy = [
     {file = "debugpy-1.6.6-cp310-cp310-macosx_11_0_x86_64.whl", hash = "sha256:0ea1011e94416e90fb3598cc3ef5e08b0a4dd6ce6b9b33ccd436c1dffc8cd664"},
     {file = "debugpy-1.6.6-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:dff595686178b0e75580c24d316aa45a8f4d56e2418063865c114eef651a982e"},
@@ -3182,6 +3168,10 @@ h5py = [
     {file = "h5py-3.8.0-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:49bc857635f935fa30e92e61ac1e87496df8f260a6945a3235e43a9890426866"},
     {file = "h5py-3.8.0-cp39-cp39-win_amd64.whl", hash = "sha256:5fd2252d1fc364ba0e93dd0b7089f4906b66805cb4e6aca7fa8874ac08649647"},
     {file = "h5py-3.8.0.tar.gz", hash = "sha256:6fead82f0c4000cf38d53f9c030780d81bfa0220218aee13b90b7701c937d95f"},
+]
+heartfelt-tools = [
+    {file = "heartfelt_tools-1.0.4-py3-none-any.whl", hash = "sha256:72b7d1b2b3c777d043c3149643ef7833c161da2e801dc125b4cff78a81ead175"},
+    {file = "heartfelt_tools-1.0.4.tar.gz", hash = "sha256:1d88237aebd9d100f7b2d23e5950c52e0ce09767168f492d455b14951e1769e8"},
 ]
 heartpy = [
     {file = "heartpy-1.2.7-py3-none-any.whl", hash = "sha256:c9df4fbd427bc10b9eaa951a34958a451a586e3c7ec0d1c46488b491abcb8ab7"},
