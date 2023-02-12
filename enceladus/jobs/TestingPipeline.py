@@ -29,6 +29,7 @@ class TestingPipeline():
         handler = RecordsHandler(data_dir=self._data_path)
         test = handler.read_records(['test'], ['ppg', 'vpg', 'apg', 'abp'], n_cores=10, AUTOTUNE=tf.data.AUTOTUNE)['test']
         ppg, vpg, apg, abp = self._load_data(test)
+        # return (ppg, vpg, apg, abp)
 
         model = self._load_model(self._model_path)
 

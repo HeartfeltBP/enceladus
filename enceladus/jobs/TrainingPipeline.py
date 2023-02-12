@@ -1,8 +1,8 @@
 import wandb
 import keras
 import tensorflow as tf
-from Enceladus.models import UNet
-from Enceladus.utils import set_all_seeds, get_strategy
+from enceladus.models import UNet
+from enceladus.utils import set_all_seeds, get_strategy
 from database_tools.tools import RecordsHandler
 
 
