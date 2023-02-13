@@ -11,7 +11,7 @@ from heartpy.datautils import rolling_mean
 from database_tools.tools.records import read_records, rescale_data
 
 
-class TestingPipeline():
+class TestingPipeline:
     def __init__(
         self,
         data_dir: str,

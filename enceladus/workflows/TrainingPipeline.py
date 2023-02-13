@@ -3,7 +3,7 @@ import keras
 import tensorflow as tf
 from enceladus.models import UNet
 from enceladus.utils import set_all_seeds, get_strategy
-from database_tools.tools import RecordsHandler
+from database_tools.tools.records import read_records
 
 
 class TrainingPipeline():
@@ -50,7 +50,7 @@ class TrainingPipeline():
 
         AUTOTUNE = tf.data.experimental.AUTOTUNE
 
-        handler = RecordsHandler(data_dir=self.config['records_dir'])
+        handler = read_records(self.config['records_dir'])
         if self.config['inputs'] == 'ppg/vpg/apg':
             dataset = handler.read_records(['train', 'val'], ['ppg', 'vpg', 'apg', 'abp'], n_cores=self.config['n_cores'], AUTOTUNE=AUTOTUNE)
         elif self.config['inputs'] == 'ppg/vpg':
