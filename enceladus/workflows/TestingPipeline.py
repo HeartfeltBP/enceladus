@@ -16,12 +16,12 @@ class TestingPipeline:
         self,
         data_dir: str,
         model_dir: str,
-        scaler: str,
+        scaler_dir: str,
     ):
         self.data_dir = data_dir
         self.model_dir = model_dir
         self.model = self._load_model(model_dir)
-        with open(data_dir + scaler, 'rb') as f:
+        with open(scaler_dir, 'rb') as f:
             self.scaler = pkl.load(f)
 
     def _load_model(self, path):
