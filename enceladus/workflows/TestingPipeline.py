@@ -10,6 +10,8 @@ from heartpy.peakdetection import detect_peaks
 from heartpy.datautils import rolling_mean
 from database_tools.tools.records import read_records, rescale_data
 
+import tensorflow as tf
+tf.config.set_visible_devices([], 'GPU')
 
 class TestingPipeline:
     def __init__(
@@ -36,7 +38,7 @@ class TestingPipeline:
         print('Loading data...')
         data = read_records(data_dir=self.data_dir)
         ppg, vpg, apg, abp = self._load_data(data['test'])
-        # return (ppg, vpg, apg, abp)
+        # return (data, ppg, vpg, apg, abp, self.model)
 
         print('Generating predictions...')
         pred = self.model.predict([ppg, vpg, apg]).reshape(-1, 256)
@@ -48,7 +50,7 @@ class TestingPipeline:
         apg_scaled = rescale_data(apg, self.scaler['apg'])
         abp_scaled = rescale_data(abp, self.scaler['abp'])
         pred_scaled = rescale_data(pred, self.scaler['abp'])
-        # return (ppg_scaled, vpg_scaled, apg_scaled, abp_scaled, pred_scaled)
+        return (ppg_scaled, vpg_scaled, apg_scaled, abp_scaled, pred_scaled)
 
         print('Calculating error...')
         df = self._calculate_error(abp_scaled, pred_scaled)
@@ -56,7 +58,7 @@ class TestingPipeline:
 
     def _load_data(self, data):
         ppg, vpg, apg, abp = [], [], [], []
-        for inputs, label in tqdm(data.as_numpy_iterator()):
+        for i, (inputs, label) in tqdm(enumerate(data.as_numpy_iterator())):
             ppg.append(inputs['ppg'])
             vpg.append(inputs['vpg'])
             apg.append(inputs['apg'])
