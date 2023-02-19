@@ -50,15 +50,8 @@ class TrainingPipeline():
 
         AUTOTUNE = tf.data.experimental.AUTOTUNE
 
-        handler = read_records(self.config['records_dir'])
         if self.config['inputs'] == 'ppg/vpg/apg':
-            dataset = handler.read_records(['train', 'val'], ['ppg', 'vpg', 'apg', 'abp'], n_cores=self.config['n_cores'], AUTOTUNE=AUTOTUNE)
-        elif self.config['inputs'] == 'ppg/vpg':
-            dataset = handler.read_records(['train', 'val'], ['ppg', 'vpg', 'abp'], n_cores=self.config['n_cores'], AUTOTUNE=AUTOTUNE)
-        elif self.config['inputs'] == 'ppg':
-            dataset = handler.read_records(['train', 'val'], ['ppg', 'abp'], n_cores=self.config['n_cores'], AUTOTUNE=AUTOTUNE)
-        else:
-            raise ValueError(f'Invalid input configuration')
+            dataset = read_records(self.config['records_dir'], n_cores=self.config['n_cores'])
 
         train = dataset['train'].prefetch(AUTOTUNE).shuffle(10*batch_size).batch(batch_size, num_parallel_calls=AUTOTUNE)
         val = dataset['val'].prefetch(AUTOTUNE).shuffle(10*batch_size).batch(batch_size, num_parallel_calls=AUTOTUNE)
@@ -119,7 +112,8 @@ class TrainingPipeline():
     def _train(self):
         run = wandb.init(config=self.default_config)
         self.model_config['dropout'] = wandb.config.dropout
-        with self.strategy.scope():
+        strategy = tf.distribute.OneDeviceStrategy(device='/device:GPU:0')
+        with strategy.scope():
             if self.saved_model is not None:
                 artifact = run.use_artifact(self.saved_model, type='model')
                 artifact_dir = artifact.download()

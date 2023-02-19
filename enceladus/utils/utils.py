@@ -3,6 +3,8 @@ import random
 import numpy as np
 import tensorflow as tf
 
+GPU_DEVICE = '/device:GPU:0'
+
 def set_all_seeds(seed):
   random.seed(seed)
   os.environ['PYTHONHASHSEED'] = str(seed)
@@ -14,7 +16,7 @@ def get_strategy(hardware):
     for device in gpu_devices:
         tf.config.experimental.set_memory_growth(device, True)
     if hardware == 'bongo':
-        strategy = tf.distribute.OneDeviceStrategy(device="/gpu:0")
+        strategy = tf.distribute.OneDeviceStrategy(device=GPU_DEVICE)
     elif hardware == 'Pegasus':
         strategy = tf.distribute.MultiWorkerMirroredStrategy()
     else:
