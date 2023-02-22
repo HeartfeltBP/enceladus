@@ -4,14 +4,11 @@ import numpy as np
 import pandas as pd
 import pickle as pkl
 from tqdm import tqdm
-from typing import Tuple
 from heartpy.preprocessing import flip_signal
 from heartpy.peakdetection import detect_peaks
 from heartpy.datautils import rolling_mean
 from database_tools.tools.records import read_records, rescale_data
 
-import tensorflow as tf
-tf.config.set_visible_devices([], 'GPU')
 
 class TestingPipeline:
     def __init__(
@@ -50,11 +47,11 @@ class TestingPipeline:
         apg_scaled = rescale_data(apg, self.scaler['apg'])
         abp_scaled = rescale_data(abp, self.scaler['abp'])
         pred_scaled = rescale_data(pred, self.scaler['abp'])
-        return (ppg_scaled, vpg_scaled, apg_scaled, abp_scaled, pred_scaled)
+        # return (ppg_scaled, vpg_scaled, apg_scaled, abp_scaled, pred_scaled)
 
         print('Calculating error...')
         df = self._calculate_error(abp_scaled, pred_scaled)
-        return df
+        return df, ppg_scaled, vpg_scaled, apg_scaled, abp_scaled, pred_scaled
 
     def _load_data(self, data):
         ppg, vpg, apg, abp = [], [], [], []
@@ -79,20 +76,22 @@ class TestingPipeline:
         for label, windows in {'abp': abp, 'pred': pred}.items():
             sbp, dbp = [], []
             for x in tqdm(windows):
-                x_pad = np.pad(x, pad_width=[pad_width, 0], constant_values=[x[0]])
-                x_pad = np.pad(x_pad, pad_width=[0, pad_width], constant_values=[x[-1]])
+                # x_pad = np.pad(x, pad_width=[pad_width, 0], constant_values=[x[0]])
+                # x_pad = np.pad(x_pad, pad_width=[0, pad_width], constant_values=[x[-1]])
 
-                rol_mean = rolling_mean(x_pad, windowsize=windowsize, sample_rate=fs)
-                peaks = detect_peaks(x_pad, rol_mean, ma_perc=ma_perc, sample_rate=fs)['peaklist']
-                peaks = np.array(peaks) - pad_width - 1
+                # rol_mean = rolling_mean(x_pad, windowsize=windowsize, sample_rate=fs)
+                # peaks = detect_peaks(x_pad, rol_mean, ma_perc=ma_perc, sample_rate=fs)['peaklist']
+                # peaks = np.array(peaks) - pad_width - 1
 
-                flip = flip_signal(x_pad)
-                rol_mean = rolling_mean(flip, windowsize=windowsize, sample_rate=fs)
-                valleys = detect_peaks(flip, rol_mean, ma_perc=ma_perc, sample_rate=fs)['peaklist']
-                valleys = np.array(valleys) - pad_width - 1
+                # flip = flip_signal(x_pad)
+                # rol_mean = rolling_mean(flip, windowsize=windowsize, sample_rate=fs)
+                # valleys = detect_peaks(flip, rol_mean, ma_perc=ma_perc, sample_rate=fs)['peaklist']
+                # valleys = np.array(valleys) - pad_width - 1
 
-                peak_mean = np.mean(x[peaks]) if len(peaks) > 0 else -1
-                valley_mean = np.mean(x[valleys]) if len(valleys) > 0 else -1
+                # peak_mean = np.mean(x[peaks]) if len(peaks) > 0 else -1
+                # valley_mean = np.mean(x[valleys]) if len(valleys) > 0 else -1
+                peak_mean = np.max(x)
+                valley_mean = np.min(x)
                 sbp.append(peak_mean)
                 dbp.append(valley_mean)
             series[f'{label}_sbp'] = sbp
