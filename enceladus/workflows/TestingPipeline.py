@@ -8,6 +8,7 @@ from heartpy.preprocessing import flip_signal
 from heartpy.peakdetection import detect_peaks
 from heartpy.datautils import rolling_mean
 from database_tools.tools.records import read_records, rescale_data
+from scipy.signal import find_peaks
 
 
 class TestingPipeline:
@@ -67,26 +68,14 @@ class TestingPipeline:
         return ppg, vpg, apg, abp
 
     def _calculate_error(self, abp, pred):
-        fs=125
-        windowsize=1
-        ma_perc=20
-        pad_width = 19
-
         series = {}
         for label, windows in {'abp': abp, 'pred': pred}.items():
             sbp, dbp = [], []
             for x in tqdm(windows):
-                # x_pad = np.pad(x, pad_width=[pad_width, 0], constant_values=[x[0]])
-                # x_pad = np.pad(x_pad, pad_width=[0, pad_width], constant_values=[x[-1]])
+                # peaks = find_peaks(x, distance=50)[0]
 
-                # rol_mean = rolling_mean(x_pad, windowsize=windowsize, sample_rate=fs)
-                # peaks = detect_peaks(x_pad, rol_mean, ma_perc=ma_perc, sample_rate=fs)['peaklist']
-                # peaks = np.array(peaks) - pad_width - 1
-
-                # flip = flip_signal(x_pad)
-                # rol_mean = rolling_mean(flip, windowsize=windowsize, sample_rate=fs)
-                # valleys = detect_peaks(flip, rol_mean, ma_perc=ma_perc, sample_rate=fs)['peaklist']
-                # valleys = np.array(valleys) - pad_width - 1
+                # flip = flip_signal(x)
+                # valleys = find_peaks(flip, distance=50)[0]
 
                 # peak_mean = np.mean(x[peaks]) if len(peaks) > 0 else -1
                 # valley_mean = np.mean(x[valleys]) if len(valleys) > 0 else -1
