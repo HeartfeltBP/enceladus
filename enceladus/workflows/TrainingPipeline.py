@@ -1,10 +1,11 @@
 import wandb
 import keras
 import tensorflow as tf
+import pickle as pkl
 from enceladus.models import UNet
 from enceladus.utils import set_all_seeds, get_strategy
 from database_tools.tools.records import read_records
-
+from keras.layers import Normalization
 
 class TrainingPipeline():
     def __init__(self, config, model_config, sweep_config, no_sweep=False, saved_model=None):
@@ -110,8 +111,18 @@ class TrainingPipeline():
         )
 
     def _train(self):
-        run = wandb.init(config=self.default_config)
+        run = wandb.init(
+            project=self.config['wandb_project'],
+            config=self.default_config,
+        )
         self.model_config['dropout'] = wandb.config.dropout
+
+        steps_per_epoch = int((self.config['data_size'] * self.config['data_split'][0]) / wandb.config.batch_size)
+        valid_steps = int((self.config['data_size'] * self.config['data_split'][1]) / wandb.config.batch_size)
+
+        dataset = self._load_dataset(wandb.config)
+        callbacks = self._get_callbacks(dataset, valid_steps)
+
         strategy = tf.distribute.OneDeviceStrategy(device='/device:GPU:0')
         with strategy.scope():
             if self.saved_model is not None:
@@ -119,8 +130,11 @@ class TrainingPipeline():
                 artifact_dir = artifact.download()
                 model = keras.models.load_model(artifact_dir, compile=False)
             else:
+                with open(self.config['scaler_dir'], 'rb') as f:
+                    scaler, split_idx = pkl.load(f)
+
                 if self.config['inputs'] == 'ppg/vpg/apg':
-                    model = UNet(self.model_config).init()
+                    model = UNet(self.model_config, scaler).init()
                 else:
                     raise ValueError(f'Invalid input configuration')
 
@@ -137,12 +151,6 @@ class TrainingPipeline():
                 loss=self.config['loss'],
                 metrics=['mae'],
             )
-
-        steps_per_epoch = int((self.config['data_size'] * self.config['data_split'][0]) / wandb.config.batch_size)
-        valid_steps = int((self.config['data_size'] * self.config['data_split'][1]) / wandb.config.batch_size)
-
-        dataset = self._load_dataset(wandb.config)
-        callbacks = self._get_callbacks(dataset, valid_steps)
 
         print('Fitting...')
         run = model.fit(

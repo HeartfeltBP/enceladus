@@ -32,7 +32,7 @@ graphviz = "^0.20.1"
 firebase-admin = "^6.0.1"
 ipykernel = "^6.21.1"
 google-cloud-aiplatform = "^1.21.0"
-heartfelt-tools = "^1.0.4"
+heartfelt-tools = "0.6.0"
 
 [build-system]
 requires = ["poetry-core"]

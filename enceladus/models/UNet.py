@@ -1,15 +1,17 @@
 import tensorflow as tf
 from keras.models import Model
-from keras.layers import Input, Conv1D, BatchNormalization, Activation, MaxPooling1D, UpSampling1D, Concatenate, Dropout, Dense
+from keras.layers import Input, Conv1D, BatchNormalization, Activation, MaxPooling1D, UpSampling1D, Concatenate, Dropout, Multiply, Add
 from keras.initializers.initializers_v2 import GlorotUniform, HeUniform
 
-
 class UNet():
-    def __init__(self, config):
+    def __init__(self, config, scaler):
         self.config = config
         ini, act = self.get_model_components(self.config)
         self.ini = ini
         self.act = act
+        min_, max_ = scaler['abp'][0], scaler['abp'][1]
+        self.rescale_tensor_1 = tf.convert_to_tensor([max_ - min_])
+        self.rescale_tensor_2 = tf.convert_to_tensor([min_])
 
     def init(self):
         ppg = Input(shape=(256, 1), name='ppg')
@@ -66,6 +68,7 @@ class UNet():
 
         # output : 32 x 256 -> 1 x 256 
         abp = self.output_block(dec_1)
+        abp = self.rescaling_layer(abp, self.rescale_tensor_1, self.rescale_tensor_2)
 
         model = Model(inputs=[ppg, vpg, apg], outputs=[abp], name='unet')
         return model
@@ -136,4 +139,9 @@ class UNet():
             padding='same'
         )(x)
         x = Activation('linear', name='abp')(x)
+        return x
+
+    def rescaling_layer(self, input, tensor1, tensor2):
+        x = Multiply()([input, tensor1])
+        x = Add()([x, tensor2])
         return x

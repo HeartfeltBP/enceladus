@@ -4,11 +4,8 @@ import numpy as np
 import pandas as pd
 import pickle as pkl
 from tqdm import tqdm
-from heartpy.preprocessing import flip_signal
-from heartpy.peakdetection import detect_peaks
-from heartpy.datautils import rolling_mean
+from database_tools.filtering.functions import find_peaks
 from database_tools.tools.records import read_records, rescale_data
-from scipy.signal import find_peaks
 
 
 class TestingPipeline:
@@ -22,7 +19,7 @@ class TestingPipeline:
         self.model_dir = model_dir
         self.model = self._load_model(model_dir)
         with open(scaler_dir, 'rb') as f:
-            self.scaler = pkl.load(f)
+            self.scaler, self.split_idx = pkl.load(f)
 
     def _load_model(self, path):
         run = wandb.init()
@@ -72,17 +69,19 @@ class TestingPipeline:
         for label, windows in {'abp': abp, 'pred': pred}.items():
             sbp, dbp = [], []
             for x in tqdm(windows):
-                # peaks = find_peaks(x, distance=50)[0]
+                pad_width = 40
+                x_pad = np.pad(x, pad_width=pad_width, constant_values=np.mean(x))
 
-                # flip = flip_signal(x)
-                # valleys = find_peaks(flip, distance=50)[0]
+                peaks, troughs = find_peaks(x_pad).values()
+                peaks = peaks - pad_width - 1
+                troughs = troughs - pad_width - 1
 
-                # peak_mean = np.mean(x[peaks]) if len(peaks) > 0 else -1
-                # valley_mean = np.mean(x[valleys]) if len(valleys) > 0 else -1
-                peak_mean = np.max(x)
-                valley_mean = np.min(x)
+                peak_mean = np.mean(x[peaks]) if len(peaks) > 0 else -1
+                valley_mean = np.mean(x[troughs]) if len(troughs) > 0 else -1
+
                 sbp.append(peak_mean)
                 dbp.append(valley_mean)
+
             series[f'{label}_sbp'] = sbp
             series[f'{label}_dbp'] = dbp
 
