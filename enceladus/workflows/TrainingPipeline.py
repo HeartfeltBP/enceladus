@@ -1,11 +1,9 @@
 import wandb
 import keras
 import tensorflow as tf
-import pickle as pkl
 from enceladus.models import UNet
 from enceladus.utils import set_all_seeds, get_strategy
 from database_tools.tools.records import read_records
-from keras.layers import Normalization
 
 class TrainingPipeline():
     def __init__(self, config, model_config, sweep_config, no_sweep=False, saved_model=None):
@@ -130,11 +128,8 @@ class TrainingPipeline():
                 artifact_dir = artifact.download()
                 model = keras.models.load_model(artifact_dir, compile=False)
             else:
-                with open(self.config['scaler_dir'], 'rb') as f:
-                    scaler, split_idx = pkl.load(f)
-
                 if self.config['inputs'] == 'ppg/vpg/apg':
-                    model = UNet(self.model_config, scaler).init()
+                    model = UNet(self.model_config).init()
                 else:
                     raise ValueError(f'Invalid input configuration')
 
