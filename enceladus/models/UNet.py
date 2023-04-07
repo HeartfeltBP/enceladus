@@ -38,18 +38,18 @@ class UNet():
         ppg_4, ppg_skip_4 = self.contraction_block(ppg_3, filters=filt * 8)
 
         # dropout
-        apg_skip_4 = Dropout(self.config['dropout'])(apg_skip_4)
-        vpg_skip_4 = Dropout(self.config['dropout'])(vpg_skip_4)
-        ppg_skip_4 = Dropout(self.config['dropout'])(ppg_skip_4)
-        apg_4 = Dropout(self.config['dropout'])(apg_4)
-        vpg_4 = Dropout(self.config['dropout'])(vpg_4)
-        ppg_4 = Dropout(self.config['dropout'])(ppg_4)
+        apg_skip_4 = Dropout(self.config.dropout)(apg_skip_4)
+        vpg_skip_4 = Dropout(self.config.dropout)(vpg_skip_4)
+        ppg_skip_4 = Dropout(self.config.dropout)(ppg_skip_4)
+        apg_4 = Dropout(self.config.dropout)(apg_4)
+        vpg_4 = Dropout(self.config.dropout)(vpg_4)
+        ppg_4 = Dropout(self.config.dropout)(ppg_4)
 
         # bottlneck : 768 x 16 -> 512 x 8
         bottleneck = self.bottleneck_block(apg_4, vpg_4, ppg_4, filters=filt * 16)
 
         # dropout
-        bottleneck = Dropout(self.config['dropout'])(bottleneck)
+        bottleneck = Dropout(self.config.dropout)(bottleneck)
 
         # decoder 4 : 512 x 16 -> 256 x 32
         dec_4 = self.expansion_block(bottleneck, apg_skip_4, vpg_skip_4, ppg_skip_4, filters=filt * 8)
@@ -78,12 +78,12 @@ class UNet():
             ReLU=tf.nn.relu,
             LeakyReLU=tf.nn.leaky_relu,
         )
-        if config['initializer'] != 'None':
-            ini = initializers[config['initializer']]
+        if config.initializer != 'None':
+            ini = initializers[config.initializer]
         else:
             ini = None
-        if config['activation'] != 'None':
-            act = activations[config['activation']]
+        if config.activation != 'None':
+            act = activations[config.activation]
         else:
             act = None
         return ini, act
