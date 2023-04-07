@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import pickle as pkl
 from tqdm import tqdm
-from database_tools.filtering.functions import find_peaks
+from database_tools.processing.detect import detect_peaks
 from database_tools.tools.records import read_records, rescale_data
 
 
@@ -43,13 +43,13 @@ class TestingPipeline:
         ppg_scaled = rescale_data(ppg, self.scaler['ppg'])
         vpg_scaled = rescale_data(vpg, self.scaler['vpg'])
         apg_scaled = rescale_data(apg, self.scaler['apg'])
-        abp_scaled = rescale_data(abp, self.scaler['abp'])
-        pred_scaled = rescale_data(pred, self.scaler['abp'])
+        # abp_scaled = rescale_data(abp, self.scaler['abp'])
+        # pred_scaled = rescale_data(pred, self.scaler['abp'])
         # return (ppg_scaled, vpg_scaled, apg_scaled, abp_scaled, pred_scaled)
 
         print('Calculating error...')
-        df = self._calculate_error(abp_scaled, pred_scaled)
-        return df, ppg_scaled, vpg_scaled, apg_scaled, abp_scaled, pred_scaled
+        df = self._calculate_error(abp, pred)
+        return df, ppg_scaled, vpg_scaled, apg_scaled, abp, pred
 
     def _load_data(self, data):
         ppg, vpg, apg, abp = [], [], [], []
@@ -72,7 +72,7 @@ class TestingPipeline:
                 pad_width = 40
                 x_pad = np.pad(x, pad_width=pad_width, constant_values=np.mean(x))
 
-                peaks, troughs = find_peaks(x_pad).values()
+                peaks, troughs = detect_peaks(x_pad).values()
                 peaks = peaks - pad_width - 1
                 troughs = troughs - pad_width - 1
 
