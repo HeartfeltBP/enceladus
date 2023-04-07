@@ -1430,14 +1430,14 @@ numpy = ">=1.14.5"
 
 [[package]]
 name = "heartfelt-tools"
-version = "0.10.0"
+version = "0.11.0"
 description = "Extract and process photoplethysmography and arterial blood pressure data from mimic3-waveforms and vitaldb."
 category = "main"
 optional = false
 python-versions = ">=3.9,<3.10"
 files = [
-    {file = "heartfelt_tools-0.10.0-py3-none-any.whl", hash = "sha256:05740a67a7c37e406467b5fe27f9c5da989588b37a8d28d4be76dc8913a3e978"},
-    {file = "heartfelt_tools-0.10.0.tar.gz", hash = "sha256:82d5ab059ef38afd9b146e32894c7b2213b72acd1ac1e0db41bf9644fab6dc39"},
+    {file = "heartfelt_tools-0.11.0-py3-none-any.whl", hash = "sha256:5bed78ff6db584715490caad48f7661b5a885f4b35e1d052018e7eaa9909036f"},
+    {file = "heartfelt_tools-0.11.0.tar.gz", hash = "sha256:5e70c7b87e75897f81cd774536bc7c96200fe08c2d340666e3269214816059a4"},
 ]
 
 [package.dependencies]
@@ -4572,4 +4572,4 @@ testing = ["big-O", "flake8 (<5)", "jaraco.functools", "jaraco.itertools", "more
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9,<3.10"
-content-hash = "3c70b55734536673139d7f9ee29e77602fbb275bbf26fb295a5521ed635abef3"
+content-hash = "4727d7a23c0f86237508c28616df29ee82aeefa4df383a7ca4846581816b054e"
