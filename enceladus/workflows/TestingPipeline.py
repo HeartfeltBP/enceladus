@@ -1,9 +1,12 @@
-import wandb
+import glob
+import pickle as pkl
+
 import keras
 import numpy as np
 import pandas as pd
-import pickle as pkl
+import wandb
 from tqdm import tqdm
+
 from database_tools.processing.detect import detect_peaks
 from database_tools.tools.records import read_records, rescale_data
 
@@ -13,13 +16,13 @@ class TestingPipeline:
         self,
         data_dir: str,
         model_dir: str,
-        scaler_dir: str,
     ):
         self.data_dir = data_dir
         self.model_dir = model_dir
-        self.model = self._load_model(model_dir)
+        scaler_dir = glob.glob(data_dir[0:-5] + 'records_info_*.pkl')[0]
         with open(scaler_dir, 'rb') as f:
             self.scaler, self.split_idx = pkl.load(f)
+        self.model = self._load_model(model_dir)
 
     def _load_model(self, path):
         run = wandb.init()
