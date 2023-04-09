@@ -1,12 +1,11 @@
-from Enceladus.jobs import TrainingPipeline
-from Enceladus.utils import GetConfiguration
+import os
+from enceladus.workflows import TrainingPipeline
 
-pipeline, model, sweep = GetConfiguration().run('config/champion.ini')
+repo_dir = os.getcwd().split('notebooks')[0]
+os.chdir(repo_dir)
+
 worker = TrainingPipeline(
-    config=pipeline,
-    model_config=model,
-    sweep_config=sweep,
+    config_path='/home/cam/Documents/database_tools/data/mimic3-data-20230408/config.ini',
     no_sweep=True,
-    saved_model=None,
 )
 worker.run()
